@@ -8,4 +8,10 @@ class GeoIpRange(
     val endIp: String,
     val country: Country,
     val region: Region,
-    val city: City?)
+    val city: City?,
+    val priority: Int) {
+
+    fun containsIpNumeric(ipNumeric: Int): Boolean {
+        return ipNumeric in (beginIpNumeric..endIpNumeric)
+    }
+}
