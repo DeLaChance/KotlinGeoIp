@@ -1,7 +1,7 @@
-package main.util
+package nl.geoipapp.util
 
 import com.google.common.net.InetAddresses
-import main.domain.GeoIpRange
+import nl.geoipapp.domain.GeoIpRange
 import java.net.InetAddress
 import java.util.stream.Collectors
 

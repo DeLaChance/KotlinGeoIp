@@ -1,8 +1,8 @@
-package main
+package nl.geoipapp
 
 import io.vertx.core.DeploymentOptions
 import io.vertx.core.Vertx
-import main.configuration.MainVerticle
+import nl.geoipapp.configuration.MainVerticle
 
 fun main(args : Array<String>) {
     val vertx = Vertx.vertx()
