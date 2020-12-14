@@ -4,15 +4,20 @@ import io.vertx.codegen.annotations.DataObject
 import io.vertx.core.json.JsonObject
 
 @DataObject
-class City(val name: String) {
+class City(
+    val name: String,
+    val geoIdentifier: String
+) {
 
     constructor(jsonObject: JsonObject) : this(
-        jsonObject.getString("name", "")
+        jsonObject.getString("name", ""),
+        jsonObject.getString("geoIdentifier", "")
     )
 
     fun toJson(): JsonObject  {
         val jsonObject: JsonObject = JsonObject()
         jsonObject.put("name", name)
+        jsonObject.put("geoIdentifier", geoIdentifier)
         return jsonObject
     }
 
@@ -23,16 +28,19 @@ class City(val name: String) {
         other as City
 
         if (name != other.name) return false
+        if (geoIdentifier != other.geoIdentifier) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        return name.hashCode()
+        var result = name.hashCode()
+        result = 31 * result + geoIdentifier.hashCode()
+        return result
     }
 
     override fun toString(): String {
-        return "City(name='$name')"
+        return "City(name='$name', geoIdentifier='$geoIdentifier')"
     }
 
     companion object {

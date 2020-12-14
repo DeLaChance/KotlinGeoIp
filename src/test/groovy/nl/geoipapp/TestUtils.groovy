@@ -13,10 +13,10 @@ import java.util.concurrent.CompletableFuture
 class TestUtils {
 
     static final String IP_ADDRESS_LOW_END = "0.0.0.0"
-    static final Region NOORD_BRABANT_REGION = new Region("Noord-Brabant")
-    static final Region NOORD_HOLLAND_REGION = new Region("Noord-Holland")
+    static final Region NOORD_BRABANT_REGION = new Region("0", "NB", "Noord-Brabant", null, null)
+    static final Region NOORD_HOLLAND_REGION = new Region("1", "NH", "Noord-Holland", null, null)
     static final Country NETHERLANDS_COUNTRY = createNetherlandsCountry()
-    static final City EINDHOVEN = new City("Eindhoven")
+    static final City EINDHOVEN = new City("Eindhoven", "2")
 
     static GeoIpRange createGeoIpRange() {
         return new GeoIpRange(0, IpAddressUtilsKt.ipToNumeric("0.0.0.0"), IpAddressUtilsKt

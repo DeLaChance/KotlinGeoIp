@@ -6,20 +6,36 @@ import io.vertx.core.json.JsonObject
 import java.util.stream.Collectors
 
 @DataObject
-class Region(val name: String) {
+class Region(
+        val geoIdentifier: String,
+        val subdivision1Code: String,
+        val subdivision1Name: String,
+        val subdivision2Code: String?,
+        val subdivision2Name: String?
+    ) {
 
     constructor(jsonObject: JsonObject) : this(
-        jsonObject.getString("name")
+        jsonObject.getString("geoIdentifier"),
+        jsonObject.getString("subdivision1Code"),
+        jsonObject.getString("subdivision1Name"),
+        jsonObject.getString("subdivision2Code"),
+        jsonObject.getString("subdivision2Name")
     )
 
     fun toJson(): JsonObject  {
         val jsonObject = JsonObject()
-        jsonObject.put("name", name)
+        jsonObject.put("geoIdentifier", geoIdentifier)
+        jsonObject.put("subdivision1Code", subdivision1Code)
+        jsonObject.put("subdivision1Name", subdivision1Name)
+        jsonObject.put("subdivision2Code", subdivision2Code)
+        jsonObject.put("subdivision2Name", subdivision2Name)
         return jsonObject
     }
 
     override fun toString(): String {
-        return "Region(name='$name')"
+        return "Region(geoIdentifier='$geoIdentifier', subdivision1Code='$subdivision1Code', " +
+            "subdivision1Name='$subdivision1Name', subdivision2Name='$subdivision2Name', subdivision2Code=" +
+            "'$subdivision2Code')"
     }
 
     override fun equals(other: Any?): Boolean {
@@ -28,15 +44,23 @@ class Region(val name: String) {
 
         other as Region
 
-        if (name != other.name) return false
+        if (geoIdentifier != other.geoIdentifier) return false
+        if (subdivision1Code != other.subdivision1Code) return false
+        if (subdivision1Name != other.subdivision1Name) return false
+        if (subdivision2Name != other.subdivision2Name) return false
+        if (subdivision2Code != other.subdivision2Code) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        return name.hashCode()
+        var result = geoIdentifier.hashCode()
+        result = 31 * result + subdivision1Code.hashCode()
+        result = 31 * result + subdivision1Name.hashCode()
+        result = 31 * result + subdivision2Name.hashCode()
+        result = 31 * result + subdivision2Code.hashCode()
+        return result
     }
-
 
     companion object {
 
