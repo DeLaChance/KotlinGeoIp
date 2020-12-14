@@ -1,6 +1,7 @@
 package nl.geoipapp.service
 
 import io.vertx.core.Vertx
+import io.vertx.kotlin.coroutines.awaitBlocking
 import io.vertx.kotlin.coroutines.awaitResult
 import nl.geoipapp.domain.GeoIpRange
 
@@ -13,3 +14,7 @@ fun createProxy(vertx: Vertx): GeoIpRangeService = GeoIpRangeServiceVertxEBProxy
 suspend fun GeoIpRangeService.findByIpAddressAwait(ipAddress: String): GeoIpRange? {
     return awaitResult { handler -> findByIpAddress(ipAddress, handler) }
 }
+suspend fun GeoIpRangeService.saveAwait(geoIpRange: List<GeoIpRange>): Void {
+    return awaitResult { handler -> save(geoIpRange, handler) }
+}
+

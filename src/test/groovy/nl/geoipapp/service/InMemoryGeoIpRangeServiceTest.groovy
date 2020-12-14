@@ -1,7 +1,6 @@
 package nl.geoipapp.service
 
 import io.vertx.core.AsyncResult
-import io.vertx.core.Future
 import io.vertx.core.Handler
 import nl.geoipapp.domain.City
 import nl.geoipapp.domain.Country
@@ -9,17 +8,12 @@ import nl.geoipapp.domain.GeoIpRange
 import nl.geoipapp.domain.Region
 import nl.geoipapp.util.IpAddressUtilsKt
 import spock.lang.Specification
+import static nl.geoipapp.TestUtils.*
 
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
 class InMemoryGeoIpRangeServiceTest extends Specification {
-
-    final String IP_ADDRESS_LOW_END = "0.0.0.0"
-    final Region NOORD_BRABANT_REGION = new Region("Noord-Brabant")
-    final Region NOORD_HOLLAND_REGION = new Region("Noord-Holland")
-    final Country NETHERLANDS_COUNTRY = createNetherlandsCountry()
-    final City EINDHOVEN = new City("Eindhoven")
 
     GeoIpRange geoIpRange
     GeoIpRangeService instanceToBeTested
@@ -63,26 +57,4 @@ class InMemoryGeoIpRangeServiceTest extends Specification {
         aGeoIpRange == null
     }
 
-    def <T> Handler<AsyncResult<T>> createHandler(CompletableFuture<T> future) {
-        return { asyncResult ->
-            if (asyncResult.succeeded()) {
-                future.complete(asyncResult.result())
-            } else {
-                future.complete(null)
-            }
-        }
-    }
-
-    def createGeoIpRange() {
-        return new GeoIpRange(0, IpAddressUtilsKt.ipToNumeric("0.0.0.0"), IpAddressUtilsKt
-            .ipToNumeric("1.1.1.1"), "0.0.0.0", "1.1.1.1", NETHERLANDS_COUNTRY, NOORD_BRABANT_REGION,
-            EINDHOVEN, 0)
-    }
-
-    def createNetherlandsCountry() {
-        def regions = new ArrayList<Region>()
-        regions.add(NOORD_HOLLAND_REGION)
-        regions.add(NOORD_BRABANT_REGION)
-        return new Country("NL", "Netherlands", regions)
-    }
 }
