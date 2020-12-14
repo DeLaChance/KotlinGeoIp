@@ -54,12 +54,16 @@ class Country(val isoCode2: String, val name: String, val regions: List<Region>)
 
     companion object {
 
-        fun from(jsonObject: JsonObject): Country? {
+        fun fromNullable(jsonObject: JsonObject): Country? {
             if (jsonObject == null) {
                 return null
             } else {
-                return Country(jsonObject)
+                return from(jsonObject)
             }
+        }
+
+        fun from(jsonObject: JsonObject): Country {
+            return Country(jsonObject)
         }
     }
 }

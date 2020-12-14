@@ -1,24 +1,45 @@
 package nl.geoipapp.configuration
 
+import io.vertx.core.eventbus.Message
+import io.vertx.core.json.JsonObject
 import io.vertx.kotlin.core.deployVerticleAwait
 import io.vertx.kotlin.coroutines.CoroutineVerticle
+import io.vertx.kotlin.coroutines.toChannel
 import nl.geoipapp.domain.GeoIpRange
 import nl.geoipapp.util.ipToNumeric
 import org.slf4j.LoggerFactory
 import sun.net.util.IPAddressUtil
 import java.util.*
 import io.vertx.serviceproxy.ServiceBinder
+import nl.geoipapp.domain.events.CountryFoundEvent
+import nl.geoipapp.repository.*
 import nl.geoipapp.service.*
 
 
 class MainVerticle : CoroutineVerticle() {
 
   val LOGGER = LoggerFactory.getLogger(MainVerticle::class.java)
+  var countryRepository: CountryRepository? = null
 
   // Called when verticle is deployed
   override suspend fun start() {
-    //vertx.deployVerticleAwait("main.geoipapp.http.HttpServerVerticle")
 
+    setupServices()
+    startEventListeners()
+  }
+
+  // Optional - called when verticle is undeployed
+  override suspend fun stop() {
+  }
+
+  private suspend fun setupServices() {
+    setupGeoIpRangeService()
+    setupCountryRepository()
+
+    startEventListeners()
+  }
+
+  private suspend fun setupGeoIpRangeService() {
     var delegate = create(vertx)
     ServiceBinder(vertx)
       .setAddress(GEO_IPRANGE_SERVICE_EVENT_BUS_ADDRESS)
@@ -26,17 +47,44 @@ class MainVerticle : CoroutineVerticle() {
 
     var proxy = createProxy(vertx)
     proxy.saveAwait(Arrays.asList(GeoIpRange(0, ipToNumeric("0.0.0.0"), ipToNumeric("1.1.1.1"),
-          "0.0.0.0", "1.1.1.1", null, null, null, 0)))
+      "0.0.0.0", "1.1.1.1", null, null, null, 0)))
     val geoIpRange: GeoIpRange? = proxy.findByIpAddressAwait("0.0.0.0")
     if (geoIpRange != null) {
       LOGGER.info("${geoIpRange.beginIp} : ${geoIpRange.endIp}")
     }
   }
 
-  // Optional - called when verticle is undeployed
-  override suspend fun stop() {
+  private fun setupCountryRepository() {
+    var delegate = createCountryRepositoryDelegate(vertx)
+    ServiceBinder(vertx)
+      .setAddress(EventBusAddress.COUNTRY_REPOSITORY_LISTENER_ADDRESS.address)
+      .register(CountryRepository::class.java, delegate)
+
+    countryRepository = createCountryRepositoryProxy(vertx)
   }
 
+  private suspend fun startEventListeners() {
+    var messageConsumer = vertx.eventBus().consumer<JsonObject>(EventBusAddress.DOMAIN_EVENTS_LISTENER_ADDRESS
+      .address)
+    val channel = messageConsumer.toChannel(vertx)
+
+    for (eventBusMessage in channel) {
+      handleMessage(eventBusMessage)
+    }
+  }
+
+  private suspend fun handleMessage(eventBusMessage: Message<JsonObject>?) {
+    if (eventBusMessage != null) {
+      val payload: JsonObject = eventBusMessage.body()
+      val type = payload.getString("type")
+      LOGGER.info("Received event of type ${type} with payload ${payload}")
+
+      if (type == "CountryFoundEvent") {
+        val event = CountryFoundEvent(payload)
+        countryRepository?.saveCountryAwait(event.country)
+      }
+    }
+  }
 
 
 }

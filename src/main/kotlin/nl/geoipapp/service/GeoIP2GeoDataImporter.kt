@@ -2,11 +2,13 @@ package nl.geoipapp.service
 
 import io.vertx.core.Vertx
 import io.vertx.core.buffer.Buffer
+import io.vertx.kotlin.core.eventbus.deliveryOptionsOf
 import io.vertx.kotlin.core.file.readFileAwait
 import nl.geoipapp.domain.City
 import nl.geoipapp.domain.Country
 import nl.geoipapp.domain.GeoIpRange
 import nl.geoipapp.domain.Region
+import nl.geoipapp.domain.events.CountryFoundEvent
 
 class GeoIP2GeoDataImporter(val vertx: Vertx) : GeoDataImporter {
 
@@ -76,7 +78,7 @@ class GeoIP2GeoDataImporter(val vertx: Vertx) : GeoDataImporter {
 
         if (countryIso !=  null && countryIso.isNotBlank() && !countries.containsKey(countryIso)) {
             val newCountry = Country(countryIso, countryName, mutableListOf())
-            countries[countryIso] = newCountry
+            throwCountryCreatedEvent(newCountry)
         }
 
         if (!regions.containsKey(geoIdentifier) && regionSubdivision1Code != null && regionSubdivision1Code.isNotBlank()) {
@@ -91,5 +93,9 @@ class GeoIP2GeoDataImporter(val vertx: Vertx) : GeoDataImporter {
         }
     }
 
-
+    private fun throwCountryCreatedEvent(country: Country) {
+        val eventPayload = CountryFoundEvent(country).toJson().encodePrettily()
+        val deliveryOptions = deliveryOptionsOf()
+        vertx.eventBus().send(eventPayload, deliveryOptions)
+    }
 }
