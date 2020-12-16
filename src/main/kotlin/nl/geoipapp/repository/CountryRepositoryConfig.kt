@@ -12,6 +12,10 @@ fun createCountryRepositoryDelegate(vertx: Vertx): CountryRepository = InMemoryC
 fun createCountryRepositoryProxy(vertx: Vertx): CountryRepository = CountryRepositoryVertxEBProxy(vertx, EventBusAddress
     .COUNTRY_REPOSITORY_LISTENER_ADDRESS.address)
 
+suspend fun CountryRepository.findCountryAwait(isoCode: String): Country? {
+    return awaitResult { handler -> findCountry(isoCode, handler) }
+}
+
 suspend fun CountryRepository.saveCountryAwait(country: Country): Void {
     return awaitResult { handler -> saveCountry(country, handler) }
 }
