@@ -6,6 +6,7 @@ import io.vertx.codegen.annotations.VertxGen
 import io.vertx.core.AsyncResult
 import io.vertx.core.Handler
 import nl.geoipapp.domain.Country
+import nl.geoipapp.domain.Region
 
 @ProxyGen
 @VertxGen
@@ -13,5 +14,6 @@ interface CountryRepository {
 
     fun findCountry(isoCode: String, handler: Handler<AsyncResult<Country?>>)
     fun saveCountry(country: Country, handler: Handler<AsyncResult<Void>>)
+    fun addRegionToCountry(region: Region, countryIso: String, handler: Handler<AsyncResult<Void>>)
 
 }

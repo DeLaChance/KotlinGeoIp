@@ -8,6 +8,7 @@ import io.vertx.kotlin.coroutines.awaitResult
 import nl.geoipapp.configuration.EventBusAddress
 import nl.geoipapp.configuration.MainVerticle
 import nl.geoipapp.domain.Country
+import nl.geoipapp.domain.Region
 import nl.geoipapp.service.GeoIpRangeService
 import nl.geoipapp.service.GeoIpRangeServiceVertxEBProxy
 import nl.geoipapp.service.InMemoryGeoIpRangeService
@@ -30,6 +31,15 @@ class InMemoryCountryRepository : CountryRepository {
 
     override fun saveCountry(country: Country, handler: Handler<AsyncResult<Void>>) {
         saveCountry(country)
+        handler.handle(Future.succeededFuture())
+    }
+
+    override fun addRegionToCountry(region: Region, countryIso: String, handler: Handler<AsyncResult<Void>>) {
+        var country = findCountry(countryIso)
+        if (country != null) {
+            LOGGER.info("Adding region '{}' to '{}'", region, country)
+            country.regions.add(region)
+        }
         handler.handle(Future.succeededFuture())
     }
 

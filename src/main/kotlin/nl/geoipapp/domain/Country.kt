@@ -7,7 +7,7 @@ import io.vertx.kotlin.core.json.jsonArrayOf
 import java.util.stream.Collectors
 
 @DataObject
-class Country(val isoCode2: String, val name: String, val regions: List<Region>) {
+class Country(val isoCode2: String, val name: String, val regions: MutableList<Region>) {
 
     constructor(jsonObject: JsonObject) : this(
         jsonObject.getString("isoCode2", ""),

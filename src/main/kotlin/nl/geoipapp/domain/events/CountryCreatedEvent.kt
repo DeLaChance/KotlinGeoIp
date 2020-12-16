@@ -5,9 +5,9 @@ import io.vertx.core.json.JsonObject
 import nl.geoipapp.domain.Country
 
 @DataObject
-class CountryFoundEvent(val country: Country) {
+class CountryCreatedEvent(val country: Country) {
 
-    val type = "CountryNotFound"
+    val type = CountryCreatedEvent::class.simpleName
 
     constructor(jsonObject: JsonObject) : this(
         Country.from(jsonObject.getJsonObject("country"))
@@ -16,6 +16,7 @@ class CountryFoundEvent(val country: Country) {
     fun toJson(): JsonObject {
         val jsonObject = JsonObject()
         jsonObject.put("country", country.toJson())
+        jsonObject.put("type", type)
         return jsonObject
     }
 }

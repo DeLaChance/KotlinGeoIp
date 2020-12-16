@@ -1,6 +1,5 @@
 package nl.geoipapp.domain
 
-import nl.geoipapp.domain.City
 import io.vertx.codegen.annotations.DataObject
 import io.vertx.core.json.JsonObject
 
@@ -13,7 +12,6 @@ class GeoIpRange(
         val endIp: String,
         val country: Country?,
         val region: Region?,
-        val city: City?,
         val priority: Int) {
 
     constructor(jsonObject: JsonObject) : this(
@@ -24,7 +22,6 @@ class GeoIpRange(
         jsonObject.getString("endIp", ""),
         Country.from(jsonObject.getJsonObject("country", null)),
         Region(jsonObject.getJsonObject("region", null)),
-        City(jsonObject.getJsonObject("city", null)),
         jsonObject.getInteger("priority", 0)
     )
 
@@ -43,10 +40,6 @@ class GeoIpRange(
 
         if (region != null) {
             jsonObject.put("region", region.toJson())
-        }
-
-        if (city != null) {
-            jsonObject.put("city", city.toJson())
         }
 
         return jsonObject
@@ -69,7 +62,6 @@ class GeoIpRange(
         if (endIp != other.endIp) return false
         if (country != other.country) return false
         if (region != other.region) return false
-        if (city != other.city) return false
         if (priority != other.priority) return false
 
         return true
@@ -83,14 +75,13 @@ class GeoIpRange(
         result = 31 * result + endIp.hashCode()
         result = 31 * result + (country?.hashCode() ?: 0)
         result = 31 * result + (region?.hashCode() ?: 0)
-        result = 31 * result + (city?.hashCode() ?: 0)
         result = 31 * result + priority
         return result
     }
 
     override fun toString(): String {
         return "GeoIpRange(id=$id, beginIpNumeric=$beginIpNumeric, endIpNumeric=$endIpNumeric, beginIp='$beginIp', " +
-            "endIp='$endIp', country=$country, region=$region, city=$city, priority=$priority)"
+            "endIp='$endIp', country=$country, region=$region, priority=$priority)"
     }
 
 

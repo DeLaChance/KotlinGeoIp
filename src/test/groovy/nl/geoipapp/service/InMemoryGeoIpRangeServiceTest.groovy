@@ -2,8 +2,6 @@ package nl.geoipapp.service
 
 import io.vertx.core.AsyncResult
 import io.vertx.core.Handler
-import nl.geoipapp.domain.City
-import nl.geoipapp.domain.Country
 import nl.geoipapp.domain.GeoIpRange
 import nl.geoipapp.domain.Region
 import nl.geoipapp.util.IpAddressUtilsKt
@@ -36,7 +34,6 @@ class InMemoryGeoIpRangeServiceTest extends Specification {
 
         then:
             aGeoIpRange != null
-            aGeoIpRange.city == EINDHOVEN
             aGeoIpRange.priority == 0
             aGeoIpRange.region == NOORD_BRABANT_REGION
             aGeoIpRange.country == NETHERLANDS_COUNTRY
