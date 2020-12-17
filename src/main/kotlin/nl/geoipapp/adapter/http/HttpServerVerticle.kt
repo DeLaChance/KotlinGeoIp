@@ -1,22 +1,19 @@
 package geoipapp.adapter.http
 
-import io.vertx.core.AbstractVerticle
-import io.vertx.core.http.HttpServer
+import io.vertx.core.json.JsonArray
+import io.vertx.core.json.JsonObject
 import io.vertx.ext.web.Route
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
 import io.vertx.kotlin.core.http.listenAwait
+import io.vertx.kotlin.core.json.jsonArrayOf
 import io.vertx.kotlin.coroutines.CoroutineVerticle
-import io.vertx.kotlin.coroutines.awaitResult
 import io.vertx.kotlin.coroutines.dispatcher
-import io.vertx.serviceproxy.ServiceBinder
-import javafx.application.Application.launch
 import kotlinx.coroutines.launch
-import nl.geoipapp.configuration.EventBusAddress
 import nl.geoipapp.domain.Country
 import nl.geoipapp.repository.CountryRepository
-import nl.geoipapp.repository.createCountryRepositoryDelegate
 import nl.geoipapp.repository.createCountryRepositoryProxy
+import nl.geoipapp.repository.findAllCountriesAwait
 import nl.geoipapp.repository.findCountryAwait
 import org.slf4j.LoggerFactory
 
@@ -26,24 +23,17 @@ class HttpServerVerticle : CoroutineVerticle() {
 
     var port: Int = 8080
     var host: String = "localhost"
-    val countryRepository: CountryRepository = createCountryRepositoryProxy(vertx)
+    lateinit var countryRepository: CountryRepository
 
     // Called when verticle is deployed
     override suspend fun start() {
-        LOG.info("Deployed routes")
         val server = vertx.createHttpServer()
         val router = Router.router(vertx)
 
-        router.route("/api/countries/:isoCode").coroutineHandler({ routingContext ->
-            val isoCode = routingContext.request().getParam("isoCode")
-            val country: Country? = countryRepository.findCountryAwait(isoCode)
+        countryRepository = createCountryRepositoryProxy(vertx)
 
-            if (country == null) {
-                routingContext.response().setStatusCode(404).end()
-            } else {
-                routingContext.response().end(country.toJson().encodePrettily())
-            }
-        })
+        router.get("/api/countries/:isoCode").coroutineHandler(findCountryByIsoCode())
+        router.get("/api/countries").coroutineHandler(findAllCountries())
 
         LOG.info("Starting server at ${host}:${port}")
         server.requestHandler(router).listenAwait(port, host)
@@ -55,9 +45,41 @@ class HttpServerVerticle : CoroutineVerticle() {
                 try {
                     fn(routingContext)
                 } catch (e: Exception) {
+                    LOG.error("Error while handling route ${routingContext.normalisedPath()}: ", e)
                     routingContext.fail(e)
                 }
             }
         }
     }
+
+    private suspend fun findAllCountries(): suspend (RoutingContext) -> Unit {
+        return { routingContext ->
+            val countries = countryRepository.findAllCountriesAwait()
+            routingContext.sendJsonResponse(jsonArrayOf(countries))
+        }
+    }
+
+    private suspend fun findCountryByIsoCode(): suspend (RoutingContext) -> Unit {
+        return { routingContext ->
+            val isoCode = routingContext.request().getParam("isoCode")
+            val country: Country? = countryRepository.findCountryAwait(isoCode)
+            routingContext.sendJsonResponse(country?.toJson())
+        }
+    }
+
+    private fun RoutingContext.sendJsonResponse(jsonArray: JsonArray?) {
+        val wrappedArray = JsonObject()
+        wrappedArray.put("count", jsonArray?.size())
+        wrappedArray.put("items", jsonArray)
+        sendJsonResponse(wrappedArray)
+    }
+
+    private fun RoutingContext.sendJsonResponse(jsonObject: JsonObject?) {
+        if (jsonObject == null) {
+            response().setStatusCode(404).end()
+        } else {
+            response().end(jsonObject.encodePrettily())
+        }
+    }
+
 }

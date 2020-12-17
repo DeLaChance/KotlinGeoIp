@@ -3,8 +3,6 @@ package nl.geoipapp.domain
 import io.vertx.codegen.annotations.DataObject
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
-import io.vertx.kotlin.core.json.jsonArrayOf
-import java.util.stream.Collectors
 
 @DataObject
 class Country(val isoCode2: String, val name: String, val regions: MutableList<Region>) {
@@ -54,7 +52,7 @@ class Country(val isoCode2: String, val name: String, val regions: MutableList<R
 
     companion object {
 
-        fun fromNullable(jsonObject: JsonObject): Country? {
+        fun fromNullable(jsonObject: JsonObject?): Country? {
             if (jsonObject == null) {
                 return null
             } else {

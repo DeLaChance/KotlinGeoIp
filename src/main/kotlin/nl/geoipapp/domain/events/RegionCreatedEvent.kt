@@ -2,7 +2,6 @@ package nl.geoipapp.domain.events
 
 import io.vertx.codegen.annotations.DataObject
 import io.vertx.core.json.JsonObject
-import nl.geoipapp.domain.Country
 import nl.geoipapp.domain.Region
 
 @DataObject

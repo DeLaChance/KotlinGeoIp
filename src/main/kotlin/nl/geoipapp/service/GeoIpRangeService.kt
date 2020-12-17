@@ -1,11 +1,9 @@
 package nl.geoipapp.service
 
-import io.vertx.codegen.annotations.GenIgnore
 import io.vertx.codegen.annotations.ProxyGen
 import io.vertx.codegen.annotations.VertxGen
 import io.vertx.core.AsyncResult
 import io.vertx.core.Handler
-import io.vertx.core.Vertx
 import nl.geoipapp.domain.GeoIpRange
 
 @ProxyGen

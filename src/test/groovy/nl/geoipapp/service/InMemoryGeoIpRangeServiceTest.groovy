@@ -1,15 +1,13 @@
 package nl.geoipapp.service
 
-import io.vertx.core.AsyncResult
-import io.vertx.core.Handler
+
 import nl.geoipapp.domain.GeoIpRange
-import nl.geoipapp.domain.Region
-import nl.geoipapp.util.IpAddressUtilsKt
 import spock.lang.Specification
-import static nl.geoipapp.TestUtils.*
 
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
+
+import static nl.geoipapp.TestUtils.*
 
 class InMemoryGeoIpRangeServiceTest extends Specification {
 

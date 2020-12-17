@@ -20,8 +20,8 @@ class GeoIpRange(
         jsonObject.getInteger("endIpNumeric", 0),
         jsonObject.getString("beginIp", ""),
         jsonObject.getString("endIp", ""),
-        Country.from(jsonObject.getJsonObject("country", null)),
-        Region(jsonObject.getJsonObject("region", null)),
+        Country.fromNullable(jsonObject.getJsonObject("country", null)),
+        Region.fromNullable(jsonObject.getJsonObject("region", null)),
         jsonObject.getInteger("priority", 0)
     )
 

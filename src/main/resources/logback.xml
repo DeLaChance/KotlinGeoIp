@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <property name="LOG_FILE_NAME" value="kotlingeoip.log" />
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>
+                %d{yyyy-MM-dd HH:mm:ss} - %msg%n
+            </pattern>
+        </encoder>
+    </appender>
+
+    <appender name="LOG_FILE" class="ch.qos.logback.core.FileAppender">
+        <file>${LOG_FILE_NAME}</file>
+
+        <!-- set immediateFlush to false for much higher logging throughput -->
+        <immediateFlush>true</immediateFlush>
+
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>%relative [%thread] %-5level %logger{35} - %msg%n</pattern>
+        </encoder>
+
+    </appender>
+
+    <logger name="io.vertx" level="INFO" additivity="false">
+        <appender-ref ref="STDOUT" />
+        <appender-ref ref="LOG_FILE" />
+    </logger>
+
+    <logger name="nl.webprint" level="DEBUG" additivity="false">
+        <appender-ref ref="STDOUT" />
+        <appender-ref ref="LOG_FILE" />
+    </logger>
+
+    <root>
+        <appender-ref ref="STDOUT" />
+        <appender-ref ref="LOG_FILE" />
+    </root>
+
+</configuration>

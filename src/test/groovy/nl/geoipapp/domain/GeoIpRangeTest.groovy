@@ -3,7 +3,7 @@ package nl.geoipapp.domain
 import io.vertx.core.json.JsonObject
 import spock.lang.Specification
 
-import static nl.geoipapp.TestUtils.*
+import static nl.geoipapp.TestUtils.createGeoIpRange
 
 class GeoIpRangeTest extends Specification {
 

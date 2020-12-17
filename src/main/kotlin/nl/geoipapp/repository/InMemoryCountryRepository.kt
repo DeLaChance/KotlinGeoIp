@@ -3,15 +3,9 @@ package nl.geoipapp.repository
 import io.vertx.core.AsyncResult
 import io.vertx.core.Future
 import io.vertx.core.Handler
-import io.vertx.core.Vertx
-import io.vertx.kotlin.coroutines.awaitResult
-import nl.geoipapp.configuration.EventBusAddress
 import nl.geoipapp.configuration.MainVerticle
 import nl.geoipapp.domain.Country
 import nl.geoipapp.domain.Region
-import nl.geoipapp.service.GeoIpRangeService
-import nl.geoipapp.service.GeoIpRangeServiceVertxEBProxy
-import nl.geoipapp.service.InMemoryGeoIpRangeService
 import org.slf4j.LoggerFactory
 
 class InMemoryCountryRepository : CountryRepository {
@@ -20,10 +14,14 @@ class InMemoryCountryRepository : CountryRepository {
 
     val countriesMap: MutableMap<String, Country> = mutableMapOf()
 
+    override fun findAllCountries(handler: Handler<AsyncResult<List<Country>>>) {
+        handler.handle(Future.succeededFuture(countriesMap.values.toList()))
+    }
+
     override fun findCountry(isoCode: String, handler: Handler<AsyncResult<Country?>>) {
         val country = findCountry(isoCode)
         if (country == null) {
-            handler.handle(Future.failedFuture("Not found"))
+            handler.handle(Future.succeededFuture(null))
         } else {
             handler.handle(Future.succeededFuture(country))
         }

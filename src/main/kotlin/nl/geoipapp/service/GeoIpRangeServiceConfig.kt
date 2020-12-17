@@ -1,7 +1,6 @@
 package nl.geoipapp.service
 
 import io.vertx.core.Vertx
-import io.vertx.kotlin.coroutines.awaitBlocking
 import io.vertx.kotlin.coroutines.awaitResult
 import nl.geoipapp.domain.GeoIpRange
 

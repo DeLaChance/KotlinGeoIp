@@ -69,8 +69,8 @@ class Region(
 
     companion object {
 
-        fun fromNullable(jsonObject: JsonObject): Region? {
-            if (jsonObject == null || (!jsonObject.containsKey("name"))) {
+        fun fromNullable(jsonObject: JsonObject?): Region? {
+            if (jsonObject == null) {
                 return null
             } else {
                 return from(jsonObject)
