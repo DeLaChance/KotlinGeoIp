@@ -16,6 +16,14 @@ import nl.geoipapp.service.GeoIpRangeService
 import nl.geoipapp.service.create
 import nl.geoipapp.service.createProxy
 import org.slf4j.LoggerFactory
+import io.vertx.config.ConfigRetriever
+import io.vertx.config.ConfigRetrieverOptions
+import io.vertx.config.ConfigStoreOptions
+import io.vertx.kotlin.config.configRetrieverOptionsOf
+import io.vertx.kotlin.config.getConfigAwait
+import io.vertx.kotlin.core.deploymentOptionsOf
+import io.vertx.kotlin.core.file.existsAwait
+import java.lang.IllegalStateException
 
 
 class MainVerticle : CoroutineVerticle() {
@@ -23,9 +31,11 @@ class MainVerticle : CoroutineVerticle() {
   val LOG = LoggerFactory.getLogger(MainVerticle::class.java)
   var countryRepository: CountryRepository? = null
   var geoIpRangeService: GeoIpRangeService? = null
+  var applicationConfig: JsonObject? = null
 
   // Called when verticle is deployed
   override suspend fun start() {
+    readConfiguration()
     setupServices()
     startEventListeners()
     startVerticles()
@@ -33,6 +43,28 @@ class MainVerticle : CoroutineVerticle() {
 
   // Optional - called when verticle is undeployed
   override suspend fun stop() {
+  }
+
+  private suspend fun readConfiguration() {
+    var configPath = "conf/config.json"
+
+    if (!vertx.fileSystem().existsAwait(configPath)) {
+      LOG.info("Tried reading configuration from path ${configPath}, but does not exist. Defaulting to classpath.")
+      configPath = "config.json"
+    }
+
+    val configStoreOptions = ConfigStoreOptions()
+      .setType("file")
+      .setOptional(true)
+      .setConfig(JsonObject().put("path", configPath))
+    LOG.info("Reading configuration from path ${configPath}")
+
+    val configRetrieverOptions = ConfigRetrieverOptions()
+      .addStore(configStoreOptions)
+    val retriever = ConfigRetriever.create(vertx, configRetrieverOptions)
+    applicationConfig = retriever.getConfigAwait()
+
+    LOG.info("Printing startup application config:\n${applicationConfig?.encodePrettily()}")
   }
 
   private fun setupServices() {
@@ -75,7 +107,7 @@ class MainVerticle : CoroutineVerticle() {
 
   private suspend fun deployVerticle(className: String) {
     LOG.info("Deploying verticle ${className}")
-    vertx.deployVerticleAwait(className)
+    vertx.deployVerticleAwait(className, deploymentOptionsOf(applicationConfig))
     LOG.info("Deployed verticle ${className}")
   }
 

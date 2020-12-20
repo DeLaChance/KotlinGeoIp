@@ -15,14 +15,14 @@ import nl.geoipapp.repository.CountryRepository
 import nl.geoipapp.repository.createCountryRepositoryProxy
 import nl.geoipapp.repository.findAllCountriesAwait
 import nl.geoipapp.repository.findCountryAwait
+import nl.geoipapp.util.getNestedInteger
+import nl.geoipapp.util.getNestedString
 import org.slf4j.LoggerFactory
 
 class HttpServerVerticle : CoroutineVerticle() {
 
     val LOG = LoggerFactory.getLogger(HttpServerVerticle::class.java)
 
-    var port: Int = 8080
-    var host: String = "localhost"
     lateinit var countryRepository: CountryRepository
 
     // Called when verticle is deployed
@@ -34,6 +34,9 @@ class HttpServerVerticle : CoroutineVerticle() {
 
         router.get("/api/countries/:isoCode").coroutineHandler(findCountryByIsoCode())
         router.get("/api/countries").coroutineHandler(findAllCountries())
+
+        var port: Int = vertx.orCreateContext.config().getNestedInteger("http.port", 8080)
+        var host: String = vertx.orCreateContext.config().getNestedString("http.server", "localhost")
 
         LOG.info("Starting server at ${host}:${port}")
         server.requestHandler(router).listenAwait(port, host)

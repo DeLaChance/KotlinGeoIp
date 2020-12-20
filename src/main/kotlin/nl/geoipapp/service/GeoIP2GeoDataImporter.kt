@@ -8,11 +8,12 @@ import nl.geoipapp.domain.Country
 import nl.geoipapp.domain.Region
 import nl.geoipapp.domain.events.CountryCreatedEvent
 import nl.geoipapp.domain.events.RegionCreatedEvent
+import nl.geoipapp.util.getNestedString
 import org.slf4j.LoggerFactory
 
 class GeoIP2GeoDataImporter(val vertx: Vertx) : GeoDataImporter {
 
-    val LOGGER = LoggerFactory.getLogger(GeoIP2GeoDataImporter::class.java)
+    val LOG = LoggerFactory.getLogger(GeoIP2GeoDataImporter::class.java)
 
     override suspend fun readCountries(fileLocation: String) {
 
@@ -31,15 +32,16 @@ class GeoIP2GeoDataImporter(val vertx: Vertx) : GeoDataImporter {
     }
 
     private fun geoIpRangesFileLocation(): String {
-        val fileName = vertx.orCreateContext.config().getString("geoipranges.file", "input/geoipranges.csv")
-        LOGGER.info("Geo ip ranges file name is: ${fileName}")
+        val fileName = vertx.orCreateContext.config().getNestedString("geoData.geoIpRanges",
+            "input/geoipranges.csv")
+        LOG.info("Geo ip ranges file name is: ${fileName}")
         return fileName
     }
 
     private fun countriesFileLocation(): String {
-        val fileName = vertx.orCreateContext.config().getString("countriesandregions.file",
+        val fileName = vertx.orCreateContext.config().getNestedString("geoData.countriesandregions",
             "input/countriesandregions.csv")
-        LOGGER.info("Countries and regions file name is: ${fileName}")
+        LOG.info("Countries and regions file name is: ${fileName}")
         return fileName
     }
 

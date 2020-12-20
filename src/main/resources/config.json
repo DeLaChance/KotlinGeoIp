@@ -1,0 +1,9 @@
+{
+  "geoData": {
+    "countriesAndRegions": "input/countriesandregions.csv",
+    "geoIpRanges": "input/geoipranges.csv"
+  },
+  "http": {
+    "port": 8081
+  }
+}
