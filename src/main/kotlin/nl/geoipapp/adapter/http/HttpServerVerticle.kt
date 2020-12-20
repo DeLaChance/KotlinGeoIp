@@ -1,7 +1,6 @@
 package geoipapp.adapter.http
 
 import io.vertx.core.json.JsonArray
-import io.vertx.core.json.JsonObject
 import io.vertx.ext.web.Route
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
@@ -15,9 +14,11 @@ import nl.geoipapp.repository.CountryRepository
 import nl.geoipapp.repository.createCountryRepositoryProxy
 import nl.geoipapp.repository.findAllCountriesAwait
 import nl.geoipapp.repository.findCountryAwait
+import nl.geoipapp.util.addAll
 import nl.geoipapp.util.getNestedInteger
 import nl.geoipapp.util.getNestedString
 import org.slf4j.LoggerFactory
+import sendJsonResponse
 
 class HttpServerVerticle : CoroutineVerticle() {
 
@@ -58,7 +59,7 @@ class HttpServerVerticle : CoroutineVerticle() {
     private suspend fun findAllCountries(): suspend (RoutingContext) -> Unit {
         return { routingContext ->
             val countries = countryRepository.findAllCountriesAwait()
-            routingContext.sendJsonResponse(jsonArrayOf(countries))
+            routingContext.sendJsonResponse(JsonArray().addAll(countries))
         }
     }
 
@@ -67,21 +68,6 @@ class HttpServerVerticle : CoroutineVerticle() {
             val isoCode = routingContext.request().getParam("isoCode")
             val country: Country? = countryRepository.findCountryAwait(isoCode)
             routingContext.sendJsonResponse(country?.toJson())
-        }
-    }
-
-    private fun RoutingContext.sendJsonResponse(jsonArray: JsonArray?) {
-        val wrappedArray = JsonObject()
-        wrappedArray.put("count", jsonArray?.size())
-        wrappedArray.put("items", jsonArray)
-        sendJsonResponse(wrappedArray)
-    }
-
-    private fun RoutingContext.sendJsonResponse(jsonObject: JsonObject?) {
-        if (jsonObject == null) {
-            response().setStatusCode(404).end()
-        } else {
-            response().end(jsonObject.encodePrettily())
         }
     }
 
