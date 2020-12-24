@@ -35,8 +35,14 @@ class InMemoryCountryRepository : CountryRepository {
     override fun addRegionToCountry(region: Region, countryIso: String, handler: Handler<AsyncResult<Void>>) {
         var country = findCountry(countryIso)
         if (country != null) {
-            LOGGER.info("Adding region '{}' to '{}'", region, country)
-            country.regions.add(region)
+            LOGGER.info("Adding region '${region.subdivision1Code}' to '${country.isoCode2}'")
+
+            val matchingRegion = country.regions.find { aRegion -> aRegion == region }
+            if (matchingRegion == null) {
+                country.regions.add(region)
+            } else {
+                region.cities?.forEach { newCity -> matchingRegion.cities?.add(newCity) }
+            }
         }
         handler.handle(Future.succeededFuture())
     }
@@ -48,7 +54,7 @@ class InMemoryCountryRepository : CountryRepository {
     private fun saveCountry(country: Country) {
         if (findCountry(country.isoCode2) == null) {
             countriesMap[country.isoCode2] = country
-            LOGGER.info("Saving country '{}'", country)
+            LOGGER.info("Saving country '${country.isoCode2}'")
         }
     }
 

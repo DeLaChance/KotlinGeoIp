@@ -1,7 +1,6 @@
 package nl.geoipapp.util
 
 import io.vertx.core.json.JsonObject
-import javax.print.attribute.IntegerSyntax
 
 /**
  * Returns a nested property in a json object, e.g. 'a.b.c' returns the value of property 'c' inside object 'b' and
@@ -47,4 +46,8 @@ fun JsonObject.nestedSearch(subKeys: List<String>): JsonObject? {
     }
 
     return jsonObject
+}
+
+fun generateAcknowledgement(): JsonObject? {
+    return JsonObject().put("success", "ok")
 }

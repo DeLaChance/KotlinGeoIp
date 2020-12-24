@@ -1,15 +1,16 @@
 package nl.geoipapp.domain
 
+import com.fasterxml.jackson.annotation.JsonInclude
 import io.vertx.codegen.annotations.DataObject
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
 
 @DataObject
-class Country(val isoCode2: String, val name: String, val regions: MutableList<Region>) {
+class Country(val isoCode2: String, val name: String, val regions: MutableSet<Region>) {
 
     constructor(jsonObject: JsonObject) : this(
-        jsonObject.getString("isoCode2", ""),
-        jsonObject.getString("name", ""),
+        jsonObject.getString("isoCode2", null),
+        jsonObject.getString("name", null),
             Region.from(jsonObject.getJsonArray("regions", JsonArray()))
     )
 

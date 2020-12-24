@@ -1,11 +1,11 @@
 package geoipapp.adapter.http
 
 import io.vertx.core.json.JsonArray
+import io.vertx.core.json.JsonObject
 import io.vertx.ext.web.Route
 import io.vertx.ext.web.Router
 import io.vertx.ext.web.RoutingContext
 import io.vertx.kotlin.core.http.listenAwait
-import io.vertx.kotlin.core.json.jsonArrayOf
 import io.vertx.kotlin.coroutines.CoroutineVerticle
 import io.vertx.kotlin.coroutines.dispatcher
 import kotlinx.coroutines.launch
@@ -58,7 +58,8 @@ class HttpServerVerticle : CoroutineVerticle() {
 
     private suspend fun findAllCountries(): suspend (RoutingContext) -> Unit {
         return { routingContext ->
-            val countries = countryRepository.findAllCountriesAwait()
+            val countries: List<JsonObject> = countryRepository.findAllCountriesAwait()
+                .map{ country -> country.toJson() }
             routingContext.sendJsonResponse(JsonArray().addAll(countries))
         }
     }
