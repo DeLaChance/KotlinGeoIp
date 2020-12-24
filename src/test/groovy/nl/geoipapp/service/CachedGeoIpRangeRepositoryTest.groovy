@@ -2,6 +2,8 @@ package nl.geoipapp.service
 
 
 import nl.geoipapp.domain.GeoIpRange
+import nl.geoipapp.repository.GeoIpRangeRepository
+import nl.geoipapp.repository.CachedGeoIpRangeRepository
 import spock.lang.Specification
 
 import java.util.concurrent.CompletableFuture
@@ -9,15 +11,15 @@ import java.util.concurrent.TimeUnit
 
 import static nl.geoipapp.TestUtils.*
 
-class InMemoryGeoIpRangeServiceTest extends Specification {
+class CachedGeoIpRangeRepositoryTest extends Specification {
 
     GeoIpRange geoIpRange
-    GeoIpRangeService instanceToBeTested
+    GeoIpRangeRepository instanceToBeTested
 
     def setup() {
         geoIpRange = createGeoIpRange()
 
-        instanceToBeTested = new InMemoryGeoIpRangeService()
+        instanceToBeTested = new CachedGeoIpRangeRepository()
         instanceToBeTested.geoIpRangesList.add(geoIpRange)
     }
 

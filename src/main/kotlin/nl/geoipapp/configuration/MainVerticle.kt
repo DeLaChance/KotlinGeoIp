@@ -6,13 +6,11 @@ import io.vertx.config.ConfigRetriever
 import io.vertx.config.ConfigRetrieverOptions
 import io.vertx.config.ConfigStoreOptions
 import io.vertx.core.eventbus.Message
-import io.vertx.core.eventbus.impl.codecs.JsonObjectMessageCodec
 import io.vertx.core.json.Json
 import io.vertx.core.json.JsonObject
 import io.vertx.core.net.JksOptions
 import io.vertx.ext.shell.ShellService
 import io.vertx.ext.shell.ShellServiceOptions
-import io.vertx.ext.shell.command.CommandBuilder
 import io.vertx.ext.shell.command.CommandProcess
 import io.vertx.ext.shell.command.CommandRegistry
 import io.vertx.ext.shell.command.CommandResolver
@@ -45,7 +43,7 @@ class MainVerticle : CoroutineVerticle() {
 
   val LOG = LoggerFactory.getLogger(MainVerticle::class.java)
   lateinit var countryRepository: CountryRepository
-  lateinit var geoIpRangeService: GeoIpRangeService
+  lateinit var geoIpRangeRepository: GeoIpRangeRepository
   lateinit var geoIpDataImporter: GeoDataImporter
   var applicationConfig: JsonObject? = null
 
@@ -132,8 +130,8 @@ class MainVerticle : CoroutineVerticle() {
     var delegate = create(vertx)
     ServiceBinder(vertx)
       .setAddress(GEO_IPRANGE_SERVICE_EVENT_BUS_ADDRESS)
-      .register(GeoIpRangeService::class.java, delegate)
-    geoIpRangeService = createProxy(vertx)
+      .register(GeoIpRangeRepository::class.java, delegate)
+    geoIpRangeRepository = createProxy(vertx)
   }
 
   private fun setupGeoIpDataImporter() {

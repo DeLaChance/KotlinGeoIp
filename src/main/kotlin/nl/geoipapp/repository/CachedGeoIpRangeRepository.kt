@@ -1,4 +1,4 @@
-package nl.geoipapp.service
+package nl.geoipapp.repository
 
 import io.vertx.core.AsyncResult
 import io.vertx.core.Future
@@ -8,7 +8,7 @@ import nl.geoipapp.util.GEO_IP_RANGE_COMPARATOR_BY_PRIORITY
 import nl.geoipapp.util.ipToNumeric
 import java.util.stream.Collectors
 
-class InMemoryGeoIpRangeService : GeoIpRangeService {
+class CachedGeoIpRangeRepository : GeoIpRangeRepository {
 
     /**
      * List should be sorted on property 'beginIpNum' of {@link GeoIpRange}.

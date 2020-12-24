@@ -1,4 +1,4 @@
-package nl.geoipapp.service
+package nl.geoipapp.repository
 
 import io.vertx.codegen.annotations.ProxyGen
 import io.vertx.codegen.annotations.VertxGen
@@ -8,7 +8,7 @@ import nl.geoipapp.domain.GeoIpRange
 
 @ProxyGen
 @VertxGen
-interface GeoIpRangeService {
+interface GeoIpRangeRepository {
 
     /**
      * Finds a {@link GeoIpRange} by an ip address (v4).
