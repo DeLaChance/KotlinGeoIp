@@ -1,6 +1,5 @@
 package nl.geoipapp.domain
 
-import com.fasterxml.jackson.annotation.JsonInclude
 import io.vertx.codegen.annotations.DataObject
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject

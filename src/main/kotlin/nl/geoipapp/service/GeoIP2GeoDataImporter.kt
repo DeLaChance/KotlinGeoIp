@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 import nl.geoipapp.configuration.EventBusAddress
 import nl.geoipapp.domain.Country
 import nl.geoipapp.domain.Region
+import nl.geoipapp.domain.command.ClearDataCommand
 import nl.geoipapp.domain.events.CountryCreatedEvent
 import nl.geoipapp.domain.events.RegionCreatedEvent
 import nl.geoipapp.util.getNestedString
@@ -40,6 +41,7 @@ class GeoIP2GeoDataImporter(val vertx: Vertx) : GeoDataImporter, CoroutineScope 
 
     override fun readCountries(handler: Handler<AsyncResult<Void>>) {
         launch {
+            clearExistingData()
             readCountriesAwait()
             handler.handle(Future.succeededFuture())
         }
@@ -61,6 +63,11 @@ class GeoIP2GeoDataImporter(val vertx: Vertx) : GeoDataImporter, CoroutineScope 
             "input/countriesandregions.csv")
         log.info("Countries and regions file name is: ${fileName}")
         return fileName
+    }
+
+    private suspend fun clearExistingData() {
+        val clearDataCommand = ClearDataCommand()
+        sendPayloadToEventBus(clearDataCommand.toJson())
     }
 
     private suspend fun readCountriesAwait() {
@@ -128,7 +135,6 @@ class GeoIP2GeoDataImporter(val vertx: Vertx) : GeoDataImporter, CoroutineScope 
             log.info("Update about importing countries status: $jobStatus")
         }
 
-
         val elements: List<String> = line.split(",")
         val geoIdentifier = elements[0]
         val countryIso = elements[4]
@@ -172,19 +178,19 @@ class GeoIP2GeoDataImporter(val vertx: Vertx) : GeoDataImporter, CoroutineScope 
 
     private suspend fun throwCountryCreatedEvent(country: Country) {
         val eventPayload = CountryCreatedEvent(country).toJson()
-        throwEventAndWait(eventPayload)
+        sendPayloadToEventBus(eventPayload)
     }
 
     private suspend fun throwRegionCreatedEvent(region: Region, countryIso: String) {
         val eventPayload = RegionCreatedEvent(region, countryIso).toJson()
-        throwEventAndWait(eventPayload)
+        sendPayloadToEventBus(eventPayload)
     }
 
-    private suspend fun throwEventAndWait(eventPayload: JsonObject) {
+    private suspend fun sendPayloadToEventBus(payload: JsonObject) {
 
         awaitResult<Message<JsonObject>> { replyHandler ->
             val deliveryOptions = deliveryOptionsOf().setSendTimeout(MESSAGE_SEND_TIMEOUT)
-            vertx.eventBus().request(EventBusAddress.DOMAIN_EVENTS_LISTENER_ADDRESS.address, eventPayload,
+            vertx.eventBus().request(EventBusAddress.DOMAIN_EVENTS_LISTENER_ADDRESS.address, payload,
                 deliveryOptions, replyHandler)
         }
     }

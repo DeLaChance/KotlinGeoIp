@@ -11,7 +11,7 @@ import io.vertx.kotlin.coroutines.dispatcher
 import kotlinx.coroutines.launch
 import nl.geoipapp.domain.Country
 import nl.geoipapp.repository.CountryRepository
-import nl.geoipapp.repository.createCountryRepositoryProxy
+import nl.geoipapp.repository.createInMemoryCountryRepositoryProxy
 import nl.geoipapp.repository.findAllCountriesAwait
 import nl.geoipapp.repository.findCountryAwait
 import nl.geoipapp.util.addAll
@@ -31,7 +31,7 @@ class HttpServerVerticle : CoroutineVerticle() {
         val server = vertx.createHttpServer()
         val router = Router.router(vertx)
 
-        countryRepository = createCountryRepositoryProxy(vertx)
+        countryRepository = createInMemoryCountryRepositoryProxy(vertx)
 
         router.get("/api/countries/:isoCode").coroutineHandler(findCountryByIsoCode())
         router.get("/api/countries").coroutineHandler(findAllCountries())

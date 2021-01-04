@@ -1,7 +1,6 @@
 package nl.geoipapp.util
 
 import io.vertx.core.json.JsonArray
-import kotlin.reflect.KClass
 
 fun <T> JsonArray.addAll(items: Collection<T>): JsonArray {
     items.forEach{ item -> add(item) }

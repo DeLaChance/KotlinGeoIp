@@ -4,7 +4,6 @@ import io.vertx.core.Vertx
 import io.vertx.ext.auth.AuthOptions
 import io.vertx.ext.auth.AuthProvider
 import nl.geoipapp.util.getNestedString
-import java.lang.IllegalArgumentException
 
 class SSHAuthOptions : AuthOptions {
 

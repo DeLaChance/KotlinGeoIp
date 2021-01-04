@@ -28,10 +28,13 @@ import io.vertx.serviceproxy.ServiceBinder
 import kotlinx.coroutines.launch
 import nl.geoipapp.configuration.shell.ImportDataCommandBuilder
 import nl.geoipapp.configuration.shell.SSHAuthOptions
+import nl.geoipapp.domain.command.ClearDataCommand
 import nl.geoipapp.domain.events.CountryCreatedEvent
 import nl.geoipapp.domain.events.RegionCreatedEvent
 import nl.geoipapp.repository.*
-import nl.geoipapp.service.*
+import nl.geoipapp.service.GeoDataImporter
+import nl.geoipapp.service.createGeoDataImporterDelegate
+import nl.geoipapp.service.createGeoDataImporterProxy
 import nl.geoipapp.util.generateAcknowledgement
 import nl.geoipapp.util.getNestedInteger
 import nl.geoipapp.util.getNestedString
@@ -41,11 +44,13 @@ import java.io.FileNotFoundException
 
 class MainVerticle : CoroutineVerticle() {
 
-  val LOG = LoggerFactory.getLogger(MainVerticle::class.java)
-  lateinit var countryRepository: CountryRepository
-  lateinit var geoIpRangeRepository: GeoIpRangeRepository
-  lateinit var geoIpDataImporter: GeoDataImporter
-  var applicationConfig: JsonObject? = null
+  private val LOG = LoggerFactory.getLogger(MainVerticle::class.java)
+  private lateinit var postGreSqlClient: PostgreSQLClient
+  private lateinit var inMemoryCountryRepository: CountryRepository
+  private lateinit var postGreSqlBackedCountryRepository: CountryRepository
+  private lateinit var geoIpRangeRepository: GeoIpRangeRepository
+  private lateinit var geoIpDataImporter: GeoDataImporter
+  private var applicationConfig: JsonObject? = null
 
   // Called when verticle is deployed
   override suspend fun start() {
@@ -87,12 +92,18 @@ class MainVerticle : CoroutineVerticle() {
   private suspend fun setupServices() {
     LOG.info("Start setting up services")
 
+    setupPostGreSqlClient()
     setupGeoIpRangeService()
-    setupCountryRepository()
+    setupPostGreSQLBackedCountryRepository()
+    setupInMemoryCountryRepository()
     setupGeoIpDataImporter()
     setupShellService()
 
     LOG.info("Completed setting up services")
+  }
+
+  private fun setupPostGreSqlClient() {
+    postGreSqlClient = PostgreSQLClient(vertx)
   }
 
   private suspend fun setupShellService() {
@@ -142,12 +153,24 @@ class MainVerticle : CoroutineVerticle() {
     geoIpDataImporter = createGeoDataImporterProxy(vertx)
   }
 
-  private fun setupCountryRepository() {
-    var delegate = createCountryRepositoryDelegate(vertx)
+  private suspend fun setupInMemoryCountryRepository() {
+    var delegate = createInMemoryCountryRepositoryDelegate()
     ServiceBinder(vertx)
-      .setAddress(EventBusAddress.COUNTRY_REPOSITORY_LISTENER_ADDRESS.address)
+      .setAddress(EventBusAddress.IN_MEMORY_COUNTRY_REPOSITORY_LISTENER_ADDRESS.address)
       .register(CountryRepository::class.java, delegate)
-    countryRepository = createCountryRepositoryProxy(vertx)
+    inMemoryCountryRepository = createInMemoryCountryRepositoryProxy(vertx)
+
+    for (country in postGreSqlBackedCountryRepository.findAllCountriesAwait()) {
+      inMemoryCountryRepository.saveCountryAwait(country)
+    }
+  }
+
+  private fun setupPostGreSQLBackedCountryRepository() {
+    var delegate = createPostGreSqlBackedRepositoryDelegate(postGreSqlClient)
+    ServiceBinder(vertx)
+      .setAddress(EventBusAddress.POSTGRESQL_BACKED_COUNTRY_REPOSITORY_LISTENER_ADDRESS.address)
+      .register(CountryRepository::class.java, delegate)
+    postGreSqlBackedCountryRepository = createPostGreSQLBackedRepositoryProxy(vertx)
   }
 
   private fun startEventListeners() {
@@ -179,10 +202,15 @@ class MainVerticle : CoroutineVerticle() {
 
         if (type == CountryCreatedEvent::class.simpleName) {
           val event = CountryCreatedEvent(payload)
-          countryRepository.saveCountryAwait(event.country)
+          inMemoryCountryRepository.saveCountryAwait(event.country)
+          postGreSqlBackedCountryRepository.saveCountryAwait(event.country)
         } else if (type == RegionCreatedEvent::class.simpleName) {
           val event = RegionCreatedEvent(payload)
-          countryRepository.addRegionToCountryAwait(event.region, event.countryIso)
+          inMemoryCountryRepository.addRegionToCountryAwait(event.region, event.countryIso)
+          postGreSqlBackedCountryRepository.addRegionToCountryAwait(event.region, event.countryIso)
+        } else if (type == ClearDataCommand::class.simpleName) {
+          postGreSqlBackedCountryRepository.clearAwait()
+          inMemoryCountryRepository.clearAwait()
         }
       }
 
