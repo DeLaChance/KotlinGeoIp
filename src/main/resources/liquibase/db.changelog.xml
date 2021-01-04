@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" xmlns:pro="http://www.liquibase.org/xml/ns/pro"
+ xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.8.xsd
+    http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd
+    http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-3.8.xsd ">
+
+    <!-- postgresql specific properties, define these for using with other databases -->
+    <property name="uuid_type" value="uuid" dbms="postgresql"/>
+    <property name="uuid_function" value="uuid_generate_v4()" dbms="postgresql"/>
+
+    <changeSet id="0" author="lvalstar">
+        <sql dbms="postgresql">
+            create extension "uuid-ossp"
+        </sql>
+    </changeSet>
+
+    <changeSet id="1" author="lvalstar">
+        <comment>Creates country table</comment>
+
+        <createTable tableName="country" schemaName="kotlingeoipapp">
+            <column name="isoCode2" type="varchar(2)">
+                <constraints primaryKey="true"/>
+            </column>
+            <column name="name" type="varchar(64)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+    </changeSet>
+
+    <changeSet id="2" author="lvalstar">
+        <comment>Creates region table</comment>
+
+        <createTable tableName="region" schemaName="kotlingeoipapp">
+            <column name="id" type="${uuid_type}" defaultValueComputed="${uuid_function}">
+                <constraints primaryKey="true"/>
+            </column>
+
+            <column name="country" type="varchar(2)">
+                <constraints nullable="false" foreignKeyName="fk_region_to_country" referencedTableName="country"
+                     referencedTableSchemaName="kotlingeoipapp" referencedColumnNames="isoCode2"
+                />
+            </column>
+
+            <column name="subdivision1Code" type="varchar(64)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="subdivision1Name" type="varchar(64)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="subdivision2Code" type="varchar(64)">
+                <constraints nullable="true"/>
+            </column>
+
+            <column name="subdivision2Name" type="varchar(64)">
+                <constraints nullable="true"/>
+            </column>
+
+            <!-- I know this can be done prettier by putting it into a separate table. -->
+            <column name="cities" type="varchar(256)">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+        
+        <addUniqueConstraint tableName="region" columnNames="subdivision1Code, subdivision1Name,
+            subdivision2Code, subdivision2Name, country" constraintName="region_code_unique_within_country"
+            schemaName="kotlingeoipapp"
+        />
+    </changeSet>
+
+    <changeSet id="3" author="lvalstar">
+        <comment>Creates geoiprange table</comment>
+
+        <createTable tableName="geoiprange" schemaName="kotlingeoipapp">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+
+            <column name="beginIpNumeric" type="int">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="endIpNumeric" type="int">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="beginIp" type="varchar(32)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="endIp" type="varchar(32)">
+                <constraints nullable="false"/>
+            </column>
+
+            <column name="country" type="varchar(2)">
+                <constraints nullable="false" foreignKeyName="fk_geoiprange_to_country" referencedTableName="country"
+                     referencedTableSchemaName="kotlingeoipapp" referencedColumnNames="isoCode2"
+                />
+            </column>
+
+            <column name="region" type="${uuid_type}">
+                <constraints nullable="false" foreignKeyName="fk_geoiprange_to_region" referencedTableName="region"
+                     referencedTableSchemaName="kotlingeoipapp" referencedColumnNames="id"
+                />
+            </column>
+
+            <column name="priority" type="int" defaultValue="0">
+                <constraints nullable="false"/>
+            </column>
+
+        </createTable>
+
+        <createIndex clustered="true" indexName="idx_beginIpNumeric" schemaName="kotlingeoipapp" tableName="geoiprange"
+            unique="false">
+
+            <column name="beginIpNumeric"/>
+        </createIndex>
+
+    </changeSet>
+
+
+</databaseChangeLog>
