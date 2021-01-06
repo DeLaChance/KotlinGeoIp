@@ -7,14 +7,10 @@ import io.vertx.core.Vertx
 import io.vertx.core.buffer.Buffer
 import io.vertx.core.eventbus.Message
 import io.vertx.core.json.JsonObject
-import io.vertx.core.shareddata.Counter
-import io.vertx.core.shareddata.SharedData
-import io.vertx.core.shareddata.impl.AsynchronousCounter
 import io.vertx.kotlin.core.eventbus.deliveryOptionsOf
 import io.vertx.kotlin.core.eventbus.requestAwait
 import io.vertx.kotlin.core.file.existsAwait
 import io.vertx.kotlin.core.file.readFileAwait
-import io.vertx.kotlin.coroutines.awaitResult
 import io.vertx.kotlin.coroutines.dispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -26,6 +22,7 @@ import nl.geoipapp.domain.events.CityCreatedEvent
 import nl.geoipapp.domain.events.CountryCreatedEvent
 import nl.geoipapp.domain.events.RegionCreatedEvent
 import nl.geoipapp.util.getNestedString
+import nl.geoipapp.util.isValidIpV4Range
 import org.apache.commons.lang3.RegExUtils
 import org.apache.commons.lang3.StringUtils
 import org.apache.commons.lang3.StringUtils.isNotBlank
@@ -33,16 +30,16 @@ import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.FileNotFoundException
 import java.lang.Exception
-import java.util.*
 import kotlin.coroutines.CoroutineContext
 
 private const val PRINT_JOB_STATUS_LINE_FREQUENCY = 1000
 private const val ELEMENTS_PER_LINE = 14
+private const val GEO_IP_RANGE_ELEMENTS_PER_LINE = 10
 private const val MESSAGE_SEND_TIMEOUT = 30_000L
 
-class GeoIP2GeoDataImporter(val vertx: Vertx) : GeoDataImporter, CoroutineScope {
+class MaxMindGeoDataImporter(val vertx: Vertx) : GeoDataImporter, CoroutineScope {
 
-    private val log: Logger = LoggerFactory.getLogger(GeoIP2GeoDataImporter::class.java)
+    private val log: Logger = LoggerFactory.getLogger(MaxMindGeoDataImporter::class.java)
 
     override val coroutineContext: CoroutineContext by lazy { vertx.dispatcher() }
 
@@ -50,6 +47,7 @@ class GeoIP2GeoDataImporter(val vertx: Vertx) : GeoDataImporter, CoroutineScope 
         launch {
             clearExistingData()
             readCountriesAwait()
+            readGeoIpRangesAwait()
             handler.handle(Future.succeededFuture())
         }
     }
@@ -195,6 +193,64 @@ class GeoIP2GeoDataImporter(val vertx: Vertx) : GeoDataImporter, CoroutineScope 
         } else {
             jobStatus.errorCount += 1
         }
+    }
+
+    private suspend fun readGeoIpRangesAwait() {
+        val geoIpRangesFileLocation = geoIpRangesFileLocation()
+        if (!vertx.fileSystem().existsAwait(geoIpRangesFileLocation)) {
+            throw FileNotFoundException("No file at location $geoIpRangesFileLocation")
+        }
+
+        val fileContentsBuffer: Buffer = vertx.fileSystem().readFileAwait(geoIpRangesFileLocation)
+        val lines: List<String> = fileContentsBuffer.toString().split("\n")
+
+        log.info("There are ${lines.size} lines in file $geoIpRangesFileLocation")
+
+        val jobStatus = JobStatus()
+
+        try {
+            log.info("Start processing input geo ip ranges...")
+
+            for (line in lines) {
+                if (isValidGeoIpRangeLine(line)) {
+                    processGeoIpRangeLine(line, jobStatus)
+                }
+            }
+
+            log.info("Completed processing input geo ip ranges...")
+        } catch (e: Exception) {
+            log.error("Exception while processing input: ", e)
+        }
+    }
+
+    private fun isValidGeoIpRangeLine(line: String): Boolean {
+
+        // network,geoname_id,registered_country_geoname_id,represented_country_geoname_id,
+        // is_anonymous_proxy,is_satellite_provider,postal_code,latitude,longitude,accuracy_radius
+        var isValid: Boolean
+
+        if (line == null) {
+            isValid = false
+        } else {
+            isValid = line.isNotBlank()
+
+            val elements: List<String> = line.split(",")
+            isValid = isValid && elements.size == GEO_IP_RANGE_ELEMENTS_PER_LINE
+
+            if (isValid) {
+                val ipRange = elements[0]
+                isValid = isValid && isValidIpV4Range(ipRange)
+
+                val geoIdentifier = elements[1]
+                isValid = isValid && isNotBlank(geoIdentifier)
+            }
+        }
+
+        if (!isValid) {
+            log.info("Skipping line $line")
+        }
+
+        return isValid
     }
 
     private fun cleanUpString(input: String): String = RegExUtils.replaceAll(input, "[\"\']", "")

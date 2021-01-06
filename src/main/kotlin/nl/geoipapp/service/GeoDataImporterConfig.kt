@@ -12,7 +12,7 @@ suspend fun GeoDataImporter.readGeoIpRangesAwait() {
     awaitResult<Void> { handler -> readGeoIpRanges(handler) }
 }
 
-fun createGeoDataImporterDelegate(vertx: Vertx): GeoDataImporter = GeoIP2GeoDataImporter(vertx)
+fun createGeoDataImporterDelegate(vertx: Vertx): GeoDataImporter = MaxMindGeoDataImporter(vertx)
 
 fun createGeoDataImporterProxy(vertx: Vertx): GeoDataImporter = GeoDataImporterVertxEBProxy(vertx, EventBusAddress
     .GEO_DATA_IMPORTER_EVENT_BUS_ADDRESS.address)

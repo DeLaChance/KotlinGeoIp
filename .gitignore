@@ -1,5 +1,6 @@
 target
 .idea
-input/*
+input/countriesandregions.csv
+input/geoipranges.csv
 conf/*
 *.log

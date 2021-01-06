@@ -6,7 +6,12 @@ Kotlin Geo IP App is a microservice-based application that can:
 
 # Technologies
 - Kotlin 
-- Vertx / Quarkus
-- AWS
-- Gatling
+- Vertx 
 - Maven
+
+
+# Build
+Build with `mvn clean install`
+
+# Run
+Run with `java -jar target/kotlin-geo-ip-1.0-SNAPSHOT-jar-with-dependencies.jar`
