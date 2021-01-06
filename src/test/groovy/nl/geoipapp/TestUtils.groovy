@@ -13,9 +13,9 @@ import java.util.concurrent.CompletableFuture
 class TestUtils {
 
     static final String IP_ADDRESS_LOW_END = "0.0.0.0"
-    static final Region NOORD_BRABANT_REGION = new Region("NB", "Noord-Brabant",
+    static final Region NOORD_BRABANT_REGION = new Region(0, "NL", "NB", "Noord-Brabant",
         null, null, Sets.newHashSet(EINDHOVEN))
-    static final Region NOORD_HOLLAND_REGION = new Region("NH", "Noord-Holland",
+    static final Region NOORD_HOLLAND_REGION = new Region(1, "NL", "NH", "Noord-Holland",
         null, null, null)
     static final Country NETHERLANDS_COUNTRY = createNetherlandsCountry()
     static final String EINDHOVEN = "Eindhoven"

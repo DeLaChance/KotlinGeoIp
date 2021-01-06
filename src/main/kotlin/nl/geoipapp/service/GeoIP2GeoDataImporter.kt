@@ -7,7 +7,11 @@ import io.vertx.core.Vertx
 import io.vertx.core.buffer.Buffer
 import io.vertx.core.eventbus.Message
 import io.vertx.core.json.JsonObject
+import io.vertx.core.shareddata.Counter
+import io.vertx.core.shareddata.SharedData
+import io.vertx.core.shareddata.impl.AsynchronousCounter
 import io.vertx.kotlin.core.eventbus.deliveryOptionsOf
+import io.vertx.kotlin.core.eventbus.requestAwait
 import io.vertx.kotlin.core.file.existsAwait
 import io.vertx.kotlin.core.file.readFileAwait
 import io.vertx.kotlin.coroutines.awaitResult
@@ -18,6 +22,7 @@ import nl.geoipapp.configuration.EventBusAddress
 import nl.geoipapp.domain.Country
 import nl.geoipapp.domain.Region
 import nl.geoipapp.domain.command.ClearDataCommand
+import nl.geoipapp.domain.events.CityCreatedEvent
 import nl.geoipapp.domain.events.CountryCreatedEvent
 import nl.geoipapp.domain.events.RegionCreatedEvent
 import nl.geoipapp.util.getNestedString
@@ -27,11 +32,13 @@ import org.apache.commons.lang3.StringUtils.isNotBlank
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.FileNotFoundException
+import java.lang.Exception
+import java.util.*
 import kotlin.coroutines.CoroutineContext
 
 private const val PRINT_JOB_STATUS_LINE_FREQUENCY = 1000
 private const val ELEMENTS_PER_LINE = 14
-private const val MESSAGE_SEND_TIMEOUT = 1000L
+private const val MESSAGE_SEND_TIMEOUT = 30_000L
 
 class GeoIP2GeoDataImporter(val vertx: Vertx) : GeoDataImporter, CoroutineScope {
 
@@ -85,18 +92,21 @@ class GeoIP2GeoDataImporter(val vertx: Vertx) : GeoDataImporter, CoroutineScope 
 
         log.info("There are ${lines.size} lines in file $countriesFileLocation")
 
-        val geoIdentifiers = mutableSetOf<String>()
         val jobStatus = JobStatus()
 
-        log.info("Start processing input coutries and regions...")
+        try {
+            log.info("Start processing input coutries and regions...")
 
-        for (line in lines) {
-            if (isValidCountriesLine(line)) {
-                processCountriesAndRegionsLine(line, geoIdentifiers, jobStatus)
+            for (line in lines) {
+                if (isValidCountriesLine(line)) {
+                    processCountriesAndRegionsLine(line, jobStatus)
+                }
             }
-        }
 
-        log.info("Completed processing input coutries and regions...")
+            log.info("Completed processing input countries and regions...")
+        } catch (e: Exception) {
+            log.error("Exception while processing input: ", e)
+        }
     }
 
 
@@ -128,7 +138,7 @@ class GeoIP2GeoDataImporter(val vertx: Vertx) : GeoDataImporter, CoroutineScope 
         return isValid
     }
 
-    private suspend fun processCountriesAndRegionsLine(line: String, geoIdentifiers: MutableSet<String>, jobStatus: JobStatus) {
+    private suspend fun processCountriesAndRegionsLine(line: String, jobStatus: JobStatus) {
 
         jobStatus.totalCount += 1
         if (jobStatus.totalCount % PRINT_JOB_STATUS_LINE_FREQUENCY == 0) {
@@ -137,36 +147,47 @@ class GeoIP2GeoDataImporter(val vertx: Vertx) : GeoDataImporter, CoroutineScope 
 
         val elements: List<String> = line.split(",")
         val geoIdentifier = elements[0]
-        val countryIso = elements[4]
-        val countryName = elements[5]
-        val regionSubdivision1Code =  elements[6]
-        val regionSubdivision1Name =  RegExUtils.replaceAll(elements[7], "[\"\']", "")
-        val regionSubdivision2Code =  elements[8]
-        val regionSubdivision2Name=  RegExUtils.replaceAll(elements[9], "[\"\']", "")
-        val cityName = RegExUtils.replaceAll(elements[10], "[\"\']", "")
+        val countryIso = cleanUpString(elements[4])
+        val countryName = cleanUpString(elements[5])
+        val regionSubdivision1Code =  cleanUpString(elements[6])
+        val regionSubdivision1Name =  cleanUpString(elements[7])
+        val regionSubdivision2Code =  cleanUpString(elements[8])
+        val regionSubdivision2Name=  cleanUpString(elements[9])
+        val cityName = cleanUpString(elements[10])
 
-        if (geoIdentifier == null || geoIdentifier.isBlank() || geoIdentifiers.contains(geoIdentifier)) {
+        if (geoIdentifier == null || geoIdentifier.isBlank() || jobStatus.geoIdentifiers.contains(geoIdentifier)) {
             jobStatus.skippedCount += 1
             return
         }
 
-        geoIdentifiers.add(geoIdentifier)
+        jobStatus.geoIdentifiers.add(geoIdentifier)
 
         var success = false
 
         if (countryIso?.isNotBlank()) {
-            success = true
+            if (!jobStatus.newCountries.contains(countryIso)) {
+                success = true
+                jobStatus.newCountries.add(countryIso)
 
-            val newCountry = Country(countryIso, countryName, mutableSetOf())
-            throwCountryCreatedEvent(newCountry)
+                val newCountry = Country(countryIso, countryName, mutableSetOf())
+                throwCountryCreatedEvent(newCountry)
+            }
         }
 
         if (regionSubdivision1Code?.isNotBlank()) {
             success = true
 
-            val newRegion = Region(regionSubdivision1Code, regionSubdivision1Name, regionSubdivision2Code,
+            val newRegion = Region(null, countryIso, regionSubdivision1Code, regionSubdivision1Name, regionSubdivision2Code,
                 regionSubdivision2Name, mutableSetOf(cityName))
-            throwRegionCreatedEvent(newRegion, countryIso)
+            if (!jobStatus.newRegions.contains(newRegion.stringIdentifier)) {
+
+                throwRegionCreatedEvent(newRegion, countryIso)
+                jobStatus.newRegions.add(newRegion.stringIdentifier)
+            }
+
+            if (cityName != null) {
+                throwCityCreatedEvent(newRegion, cityName)
+            }
         }
 
         if (success) {
@@ -175,6 +196,8 @@ class GeoIP2GeoDataImporter(val vertx: Vertx) : GeoDataImporter, CoroutineScope 
             jobStatus.errorCount += 1
         }
     }
+
+    private fun cleanUpString(input: String): String = RegExUtils.replaceAll(input, "[\"\']", "")
 
     private suspend fun throwCountryCreatedEvent(country: Country) {
         val eventPayload = CountryCreatedEvent(country).toJson()
@@ -186,12 +209,22 @@ class GeoIP2GeoDataImporter(val vertx: Vertx) : GeoDataImporter, CoroutineScope 
         sendPayloadToEventBus(eventPayload)
     }
 
+    private suspend fun throwCityCreatedEvent(region: Region, cityName: String) {
+        val eventPayload = CityCreatedEvent(region, cityName).toJson()
+        sendPayloadToEventBus(eventPayload)
+    }
+
     private suspend fun sendPayloadToEventBus(payload: JsonObject) {
 
-        awaitResult<Message<JsonObject>> { replyHandler ->
-            val deliveryOptions = deliveryOptionsOf().setSendTimeout(MESSAGE_SEND_TIMEOUT)
-            vertx.eventBus().request(EventBusAddress.DOMAIN_EVENTS_LISTENER_ADDRESS.address, payload,
-                deliveryOptions, replyHandler)
+        log.info("Sending event bus message with payload: ${payload}")
+
+        val deliveryOptions = deliveryOptionsOf().setSendTimeout(MESSAGE_SEND_TIMEOUT)
+        val reply: Message<JsonObject> = vertx.eventBus().requestAwait(EventBusAddress.DOMAIN_EVENTS_LISTENER_ADDRESS.address,
+            payload, deliveryOptions)
+
+        val errorMessage: String? = reply.body().getString("error", null)
+        if (errorMessage != null) {
+            throw Exception(errorMessage)
         }
     }
 }

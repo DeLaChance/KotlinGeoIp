@@ -15,6 +15,7 @@ interface CountryRepository {
     fun findCountry(isoCode: String, handler: Handler<AsyncResult<Country?>>)
     fun saveCountry(country: Country, handler: Handler<AsyncResult<Void>>)
     fun addRegionToCountry(region: Region, countryIso: String, handler: Handler<AsyncResult<Void>>)
+    fun addCityToRegion(region: Region, city: String, handler: Handler<AsyncResult<Void>>)
     fun clear(handler: Handler<AsyncResult<Void>>)
 
 }

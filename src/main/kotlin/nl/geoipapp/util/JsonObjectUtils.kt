@@ -51,3 +51,8 @@ fun JsonObject.nestedSearch(subKeys: List<String>): JsonObject? {
 fun generateAcknowledgement(): JsonObject? {
     return JsonObject().put("success", "ok")
 }
+
+fun generateError(message: String): JsonObject {
+    return JsonObject().put("success", "error").put("error", message)
+}
+

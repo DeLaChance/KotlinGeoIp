@@ -9,9 +9,10 @@ import io.vertx.kotlin.core.http.listenAwait
 import io.vertx.kotlin.coroutines.CoroutineVerticle
 import io.vertx.kotlin.coroutines.dispatcher
 import kotlinx.coroutines.launch
+import nl.geoipapp.adapter.http.CountryDto
 import nl.geoipapp.domain.Country
 import nl.geoipapp.repository.CountryRepository
-import nl.geoipapp.repository.createInMemoryCountryRepositoryProxy
+import nl.geoipapp.repository.createPostGreSQLBackedRepositoryProxy
 import nl.geoipapp.repository.findAllCountriesAwait
 import nl.geoipapp.repository.findCountryAwait
 import nl.geoipapp.util.addAll
@@ -26,12 +27,12 @@ class HttpServerVerticle : CoroutineVerticle() {
 
     lateinit var countryRepository: CountryRepository
 
-    // Called when verticle is deployed
     override suspend fun start() {
+
         val server = vertx.createHttpServer()
         val router = Router.router(vertx)
 
-        countryRepository = createInMemoryCountryRepositoryProxy(vertx)
+        countryRepository = createPostGreSQLBackedRepositoryProxy(vertx)
 
         router.get("/api/countries/:isoCode").coroutineHandler(findCountryByIsoCode())
         router.get("/api/countries").coroutineHandler(findAllCountries())
@@ -58,7 +59,7 @@ class HttpServerVerticle : CoroutineVerticle() {
 
     private suspend fun findAllCountries(): suspend (RoutingContext) -> Unit {
         return { routingContext ->
-            val countries: List<JsonObject> = countryRepository.findAllCountriesAwait()
+            val countries: List<JsonObject> = CountryDto.from(countryRepository.findAllCountriesAwait())
                 .map{ country -> country.toJson() }
             routingContext.sendJsonResponse(JsonArray().addAll(countries))
         }
@@ -67,7 +68,7 @@ class HttpServerVerticle : CoroutineVerticle() {
     private suspend fun findCountryByIsoCode(): suspend (RoutingContext) -> Unit {
         return { routingContext ->
             val isoCode = routingContext.request().getParam("isoCode")
-            val country: Country? = countryRepository.findCountryAwait(isoCode)
+            val country: CountryDto? = CountryDto.fromNullable(countryRepository.findCountryAwait(isoCode))
             routingContext.sendJsonResponse(country?.toJson())
         }
     }

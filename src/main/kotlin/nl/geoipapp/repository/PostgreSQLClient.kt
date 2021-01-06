@@ -9,9 +9,11 @@ import io.vertx.sqlclient.PoolOptions
 import io.vertx.sqlclient.Tuple
 import nl.geoipapp.util.getNestedInteger
 import nl.geoipapp.util.getNestedString
+import org.slf4j.LoggerFactory
 
 class PostgreSQLClient(val vertx: Vertx) {
 
+    private val log = LoggerFactory.getLogger(PostgreSQLClient::class.java)
     private val globalConfig: JsonObject = vertx.orCreateContext.config()
 
     private val connectOptions: PgConnectOptions = PgConnectOptions()
@@ -26,14 +28,19 @@ class PostgreSQLClient(val vertx: Vertx) {
 
     val client: PgPool = PgPool.pool(vertx, connectOptions, poolOptions)
 
-    suspend fun <T> queryAwait(sql: String, rowMapper: RowMapper<T>): List<T> = client.preparedQuery(sql).executeAwait()
-        .map{ row -> rowMapper.map(row) }
+    suspend fun <T> queryAwait(sql: String, rowMapper: RowMapper<T>): List<T> {
+        log.info("Running query: $sql")
+        return rowMapper.map(client.preparedQuery(sql).executeAwait())
+    }
 
-    suspend fun <T> querySingleAwait(sql: String, rowMapper: RowMapper<T>, vararg parameters: Any?): T? =
-        client.preparedQuery(sql).executeAwait(Tuple.of(parameters)).map{ row -> rowMapper.map(row) }.firstOrNull()
+    suspend fun <T> querySingleAwait(sql: String, rowMapper: RowMapper<T>, parameters: List<Any?>): T? {
+        log.info("Running query: $sql with $parameters")
+        return rowMapper.map(client.preparedQuery(sql).executeAwait(Tuple.wrap(parameters))).firstOrNull()
+    }
 
-    suspend fun updateAwait(sql: String, vararg parameters: Any?) {
-        client.preparedQuery(sql).executeAwait(Tuple.of(parameters))
+    suspend fun updateAwait(sql: String, parameters: List<Any?>) {
+        log.info("Running query: $sql with $parameters")
+        client.preparedQuery(sql).executeAwait(Tuple.wrap(parameters))
     }
 
 }

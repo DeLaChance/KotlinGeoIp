@@ -5,16 +5,6 @@
     http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd
     http://www.liquibase.org/xml/ns/pro http://www.liquibase.org/xml/ns/pro/liquibase-pro-3.8.xsd ">
 
-    <!-- postgresql specific properties, define these for using with other databases -->
-    <property name="uuid_type" value="uuid" dbms="postgresql"/>
-    <property name="uuid_function" value="uuid_generate_v4()" dbms="postgresql"/>
-
-    <changeSet id="0" author="lvalstar">
-        <sql dbms="postgresql">
-            create extension "uuid-ossp"
-        </sql>
-    </changeSet>
-
     <changeSet id="1" author="lvalstar">
         <comment>Creates country table</comment>
 
@@ -33,7 +23,7 @@
         <comment>Creates region table</comment>
 
         <createTable tableName="region" schemaName="kotlingeoipapp">
-            <column name="id" type="${uuid_type}" defaultValueComputed="${uuid_function}">
+            <column name="id" type="int" autoIncrement="true">
                 <constraints primaryKey="true"/>
             </column>
 
@@ -59,10 +49,6 @@
                 <constraints nullable="true"/>
             </column>
 
-            <!-- I know this can be done prettier by putting it into a separate table. -->
-            <column name="cities" type="varchar(256)">
-                <constraints nullable="true"/>
-            </column>
         </createTable>
         
         <addUniqueConstraint tableName="region" columnNames="subdivision1Code, subdivision1Name,
@@ -101,7 +87,7 @@
                 />
             </column>
 
-            <column name="region" type="${uuid_type}">
+            <column name="region" type="int">
                 <constraints nullable="false" foreignKeyName="fk_geoiprange_to_region" referencedTableName="region"
                      referencedTableSchemaName="kotlingeoipapp" referencedColumnNames="id"
                 />
@@ -118,6 +104,28 @@
 
             <column name="beginIpNumeric"/>
         </createIndex>
+
+    </changeSet>
+
+    <changeSet id="4" author="lvalstar">
+        <comment>Creates city table</comment>
+
+        <createTable tableName="city" schemaName="kotlingeoipapp">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+
+            <column name="region" type="int">
+                <constraints nullable="false" foreignKeyName="fk_city_to_region" referencedTableName="region"
+                     referencedTableSchemaName="kotlingeoipapp" referencedColumnNames="id"
+                />
+            </column>
+
+            <column name="name" type="varchar(64)">
+                <constraints nullable="false"/>
+            </column>
+
+        </createTable>
 
     </changeSet>
 

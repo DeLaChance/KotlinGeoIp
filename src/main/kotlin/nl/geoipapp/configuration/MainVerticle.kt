@@ -29,6 +29,7 @@ import kotlinx.coroutines.launch
 import nl.geoipapp.configuration.shell.ImportDataCommandBuilder
 import nl.geoipapp.configuration.shell.SSHAuthOptions
 import nl.geoipapp.domain.command.ClearDataCommand
+import nl.geoipapp.domain.events.CityCreatedEvent
 import nl.geoipapp.domain.events.CountryCreatedEvent
 import nl.geoipapp.domain.events.RegionCreatedEvent
 import nl.geoipapp.repository.*
@@ -36,6 +37,7 @@ import nl.geoipapp.service.GeoDataImporter
 import nl.geoipapp.service.createGeoDataImporterDelegate
 import nl.geoipapp.service.createGeoDataImporterProxy
 import nl.geoipapp.util.generateAcknowledgement
+import nl.geoipapp.util.generateError
 import nl.geoipapp.util.getNestedInteger
 import nl.geoipapp.util.getNestedString
 import org.slf4j.LoggerFactory
@@ -46,8 +48,7 @@ class MainVerticle : CoroutineVerticle() {
 
   private val LOG = LoggerFactory.getLogger(MainVerticle::class.java)
   private lateinit var postGreSqlClient: PostgreSQLClient
-  private lateinit var inMemoryCountryRepository: CountryRepository
-  private lateinit var postGreSqlBackedCountryRepository: CountryRepository
+  private lateinit var countryRepository: CountryRepository
   private lateinit var geoIpRangeRepository: GeoIpRangeRepository
   private lateinit var geoIpDataImporter: GeoDataImporter
   private var applicationConfig: JsonObject? = null
@@ -95,7 +96,6 @@ class MainVerticle : CoroutineVerticle() {
     setupPostGreSqlClient()
     setupGeoIpRangeService()
     setupPostGreSQLBackedCountryRepository()
-    setupInMemoryCountryRepository()
     setupGeoIpDataImporter()
     setupShellService()
 
@@ -153,24 +153,14 @@ class MainVerticle : CoroutineVerticle() {
     geoIpDataImporter = createGeoDataImporterProxy(vertx)
   }
 
-  private suspend fun setupInMemoryCountryRepository() {
-    var delegate = createInMemoryCountryRepositoryDelegate()
-    ServiceBinder(vertx)
-      .setAddress(EventBusAddress.IN_MEMORY_COUNTRY_REPOSITORY_LISTENER_ADDRESS.address)
-      .register(CountryRepository::class.java, delegate)
-    inMemoryCountryRepository = createInMemoryCountryRepositoryProxy(vertx)
-
-    for (country in postGreSqlBackedCountryRepository.findAllCountriesAwait()) {
-      inMemoryCountryRepository.saveCountryAwait(country)
-    }
-  }
-
-  private fun setupPostGreSQLBackedCountryRepository() {
+  private suspend fun setupPostGreSQLBackedCountryRepository() {
     var delegate = createPostGreSqlBackedRepositoryDelegate(postGreSqlClient)
     ServiceBinder(vertx)
       .setAddress(EventBusAddress.POSTGRESQL_BACKED_COUNTRY_REPOSITORY_LISTENER_ADDRESS.address)
       .register(CountryRepository::class.java, delegate)
-    postGreSqlBackedCountryRepository = createPostGreSQLBackedRepositoryProxy(vertx)
+    countryRepository = createPostGreSQLBackedRepositoryProxy(vertx)
+
+    countryRepository.findAllCountriesAwait() // Fills up the cache
   }
 
   private fun startEventListeners() {
@@ -200,21 +190,25 @@ class MainVerticle : CoroutineVerticle() {
 
       launch(vertx.dispatcher()) {
 
-        if (type == CountryCreatedEvent::class.simpleName) {
-          val event = CountryCreatedEvent(payload)
-          inMemoryCountryRepository.saveCountryAwait(event.country)
-          postGreSqlBackedCountryRepository.saveCountryAwait(event.country)
-        } else if (type == RegionCreatedEvent::class.simpleName) {
-          val event = RegionCreatedEvent(payload)
-          inMemoryCountryRepository.addRegionToCountryAwait(event.region, event.countryIso)
-          postGreSqlBackedCountryRepository.addRegionToCountryAwait(event.region, event.countryIso)
-        } else if (type == ClearDataCommand::class.simpleName) {
-          postGreSqlBackedCountryRepository.clearAwait()
-          inMemoryCountryRepository.clearAwait()
+        try {
+          if (type == CountryCreatedEvent::class.simpleName) {
+            val event = CountryCreatedEvent(payload)
+            countryRepository.saveCountryAwait(event.country)
+          } else if (type == RegionCreatedEvent::class.simpleName) {
+            val event = RegionCreatedEvent(payload)
+            countryRepository.addRegionToCountryAwait(event.region, event.countryIso)
+          } else if (type == CityCreatedEvent::class.simpleName) {
+            val event = CityCreatedEvent(payload)
+            countryRepository.addCityToRegionAwait(event.region, event.city)
+          } else if (type == ClearDataCommand::class.simpleName) {
+            countryRepository.clearAwait()
+          }
+
+          eventBusMessage.reply(generateAcknowledgement())
+        } catch (e: Exception) {
+          eventBusMessage.reply(generateError(e.message.orEmpty()))
         }
       }
-
-      eventBusMessage.reply(generateAcknowledgement())
     }
   }
 

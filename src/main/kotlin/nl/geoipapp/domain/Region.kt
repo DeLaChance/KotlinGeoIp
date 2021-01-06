@@ -1,13 +1,17 @@
 package nl.geoipapp.domain
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import io.vertx.codegen.annotations.DataObject
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
 import nl.geoipapp.util.toMutableSet
+import java.util.*
 import java.util.stream.Collectors
 
 @DataObject
 class Region(
+        val intIdentifier: Int?,
+        val countryIsoCode: String,
         val subdivision1Code: String,
         val subdivision1Name: String,
         val subdivision2Code: String?,
@@ -15,7 +19,11 @@ class Region(
         val cities: MutableSet<String>?
     ) {
 
+    val stringIdentifier = "$countryIsoCode $subdivision1Code $subdivision1Name $subdivision2Code $subdivision2Name"
+
     constructor(jsonObject: JsonObject) : this(
+        jsonObject.getInteger("intIdentifier", null),
+        jsonObject.getString("countryIsoCode"),
         jsonObject.getString("subdivision1Code"),
         jsonObject.getString("subdivision1Name", null),
         jsonObject.getString("subdivision2Code", null),
@@ -25,6 +33,8 @@ class Region(
 
     fun toJson(): JsonObject  {
         val jsonObject = JsonObject()
+        jsonObject.put("intIdentifier", intIdentifier)
+        jsonObject.put("countryIsoCode", countryIsoCode)
         jsonObject.put("subdivision1Code", subdivision1Code)
         jsonObject.put("subdivision1Name", subdivision1Name)
         jsonObject.put("subdivision2Code", subdivision2Code)
@@ -41,31 +51,37 @@ class Region(
         return jsonObject
     }
 
+    override fun toString(): String {
+        return "Region(countryIsoCode=$countryIsoCode, subdivision1Code='$subdivision1Code', subdivision1Name='$subdivision1Name', " +
+            "subdivision2Code=$subdivision2Code, subdivision2Name=$subdivision2Name, cities=$cities)"
+    }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
         other as Region
 
+        if (intIdentifier != other.intIdentifier) return false
+        if (countryIsoCode != other.countryIsoCode) return false
         if (subdivision1Code != other.subdivision1Code) return false
         if (subdivision1Name != other.subdivision1Name) return false
         if (subdivision2Code != other.subdivision2Code) return false
         if (subdivision2Name != other.subdivision2Name) return false
+        if (cities != other.cities) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        var result = subdivision1Code.hashCode()
+        var result = intIdentifier ?: 0
+        result = 31 * result + countryIsoCode.hashCode()
+        result = 31 * result + subdivision1Code.hashCode()
         result = 31 * result + subdivision1Name.hashCode()
         result = 31 * result + (subdivision2Code?.hashCode() ?: 0)
         result = 31 * result + (subdivision2Name?.hashCode() ?: 0)
+        result = 31 * result + (cities?.hashCode() ?: 0)
         return result
-    }
-
-    override fun toString(): String {
-        return "Region(subdivision1Code='$subdivision1Code', subdivision1Name='$subdivision1Name', " +
-            "subdivision2Code=$subdivision2Code, subdivision2Name=$subdivision2Name, cities=$cities)"
     }
 
     companion object {
