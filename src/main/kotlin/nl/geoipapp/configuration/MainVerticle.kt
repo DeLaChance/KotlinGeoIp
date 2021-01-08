@@ -28,11 +28,18 @@ import io.vertx.serviceproxy.ServiceBinder
 import kotlinx.coroutines.launch
 import nl.geoipapp.configuration.shell.ImportDataCommandBuilder
 import nl.geoipapp.configuration.shell.SSHAuthOptions
+import nl.geoipapp.domain.City
+import nl.geoipapp.domain.Country
+import nl.geoipapp.domain.GeoIpRange
+import nl.geoipapp.domain.Region
 import nl.geoipapp.domain.command.ClearDataCommand
-import nl.geoipapp.domain.events.CityCreatedEvent
-import nl.geoipapp.domain.events.CountryCreatedEvent
-import nl.geoipapp.domain.events.RegionCreatedEvent
-import nl.geoipapp.repository.*
+import nl.geoipapp.domain.event.CityCreatedEvent
+import nl.geoipapp.domain.event.CountryCreatedEvent
+import nl.geoipapp.domain.event.GeoIpRangeCreatedEvent
+import nl.geoipapp.domain.event.RegionCreatedEvent
+import nl.geoipapp.repository.PostgreSQLClient
+import nl.geoipapp.repository.country.*
+import nl.geoipapp.repository.geoiprange.*
 import nl.geoipapp.service.GeoDataImporter
 import nl.geoipapp.service.createGeoDataImporterDelegate
 import nl.geoipapp.service.createGeoDataImporterProxy
@@ -138,7 +145,7 @@ class MainVerticle : CoroutineVerticle() {
   }
 
   private fun setupGeoIpRangeService() {
-    var delegate = create(vertx)
+    var delegate = create(postGreSqlClient)
     ServiceBinder(vertx)
       .setAddress(GEO_IPRANGE_SERVICE_EVENT_BUS_ADDRESS)
       .register(GeoIpRangeRepository::class.java, delegate)
@@ -202,6 +209,22 @@ class MainVerticle : CoroutineVerticle() {
             countryRepository.addCityToRegionAwait(event.region, event.city)
           } else if (type == ClearDataCommand::class.simpleName) {
             countryRepository.clearAwait()
+          } else if (type == GeoIpRangeCreatedEvent::class.simpleName) {
+            // TODO: handle case of regions without cities
+
+            val event = GeoIpRangeCreatedEvent(payload)
+            val city: City? = countryRepository.findCityByGeoIdentifierAwait(event.geoNameIdentifier)
+            if (city != null && city.regionIntIdentifier != null) {
+              val region: Region? = countryRepository.findRegionByIdAwait(city.regionIntIdentifier)
+              if (region != null) {
+                val country: Country? = countryRepository.findCountryByIdAwait(region.countryIsoCode)
+                if (country != null) {
+                  val geoIpRange = GeoIpRange.from(event.cidrRange, region, country, city)
+                  geoIpRangeRepository.saveSingleAwait(geoIpRange)
+                }
+              }
+
+            }
           }
 
           eventBusMessage.reply(generateAcknowledgement())

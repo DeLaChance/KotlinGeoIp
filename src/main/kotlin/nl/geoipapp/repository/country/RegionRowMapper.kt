@@ -1,8 +1,9 @@
-package nl.geoipapp.repository
+package nl.geoipapp.repository.country
 
 import io.vertx.sqlclient.Row
 import io.vertx.sqlclient.RowSet
 import nl.geoipapp.domain.Region
+import nl.geoipapp.repository.RowMapper
 
 
 class RegionRowMapper : RowMapper<Region> {
@@ -20,7 +21,7 @@ class RegionRowMapper : RowMapper<Region> {
             row.getString("subdivision1Name"),
             row.getString("subdivision2Code"),
             row.getString("subdivision2Name"),
-            mutableSetOf()
+            mutableListOf()
         )
     }
 }

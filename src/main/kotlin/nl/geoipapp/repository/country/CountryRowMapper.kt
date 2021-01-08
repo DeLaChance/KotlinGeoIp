@@ -1,14 +1,16 @@
-package nl.geoipapp.repository
+package nl.geoipapp.repository.country
 
 import io.vertx.sqlclient.Row
 import io.vertx.sqlclient.RowSet
+import nl.geoipapp.domain.City
 import nl.geoipapp.domain.Country
 import nl.geoipapp.domain.Region
-import java.util.*
+import nl.geoipapp.repository.RowMapper
 
 class CountryRowMapper : RowMapper<Country> {
 
     override fun map(rows: RowSet<Row>): List<Country> {
+
         val countriesMap: MutableMap<String, Country> = mutableMapOf()
         val regionsMap: MutableMap<String, Region> = mutableMapOf()
 
@@ -27,9 +29,9 @@ class CountryRowMapper : RowMapper<Country> {
                     countriesMap[isoCode]?.regions?.add(region)
                 }
 
-                val cityName: String? = row.getString("cityName")
-                if (cityName != null) {
-                    regionsMap[region.stringIdentifier]?.cities?.add(cityName)
+                val city = mapCity(row)
+                if (city != null) {
+                    regionsMap[region.stringIdentifier]?.cities?.add(city)
                 }
             }
         }
@@ -38,20 +40,34 @@ class CountryRowMapper : RowMapper<Country> {
     }
 
     private fun mapRegion(row: Row): Region? {
-        val id = row.getInteger("id")
-        if (id == null) {
+        val regionIntIdentifier = row.getInteger("regionIdentifier")
+        if (regionIntIdentifier == null) {
             return null
         } else {
             return Region(
-                id,
+                regionIntIdentifier,
                 row.getString("isoCode2"),
                 row.getString("subdivision1Code"),
                 row.getString("subdivision1Name"),
                 row.getString("subdivision2Code"),
                 row.getString("subdivision2Name"),
-                mutableSetOf()
+                mutableListOf()
             )
         }
+    }
+
+    private fun mapCity(row:Row): City? {
+
+        val cityGeoIdentifier: String = row.getString("cityGeoIdentifier")
+        val cityName: String = row.getString("cityName")
+        val regionIntIdentifier = row.getInteger("regionIntIdentifier")
+
+        return City(
+            intIdentifier = row.getInteger("cityIdentifier"),
+            geoNameIdentifier = cityGeoIdentifier,
+            cityName = cityName,
+            regionIntIdentifier = regionIntIdentifier
+        )
     }
 
 }

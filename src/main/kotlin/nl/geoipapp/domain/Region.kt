@@ -1,11 +1,8 @@
 package nl.geoipapp.domain
 
-import com.fasterxml.jackson.annotation.JsonIgnore
 import io.vertx.codegen.annotations.DataObject
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
-import nl.geoipapp.util.toMutableSet
-import java.util.*
 import java.util.stream.Collectors
 
 @DataObject
@@ -16,7 +13,7 @@ class Region(
         val subdivision1Name: String,
         val subdivision2Code: String?,
         val subdivision2Name: String?,
-        val cities: MutableSet<String>?
+        val cities: MutableList<City>?
     ) {
 
     val stringIdentifier = "$countryIsoCode $subdivision1Code $subdivision1Name $subdivision2Code $subdivision2Name"
@@ -28,7 +25,7 @@ class Region(
         jsonObject.getString("subdivision1Name", null),
         jsonObject.getString("subdivision2Code", null),
         jsonObject.getString("subdivision2Name", null),
-        jsonObject.getJsonArray("cities", null)?.toMutableSet(String::class.java)
+        City.from(jsonObject.getJsonArray("cities", null))
     )
 
     fun toJson(): JsonObject  {
@@ -45,15 +42,17 @@ class Region(
             citiesArray = null
         } else {
             citiesArray = JsonArray()
-            cities.forEach{ city -> citiesArray.add(city) }
+            cities.forEach{ city -> citiesArray.add(city.toJson()) }
         }
+
         jsonObject.put("cities", citiesArray)
         return jsonObject
     }
 
     override fun toString(): String {
-        return "Region(countryIsoCode=$countryIsoCode, subdivision1Code='$subdivision1Code', subdivision1Name='$subdivision1Name', " +
-            "subdivision2Code=$subdivision2Code, subdivision2Name=$subdivision2Name, cities=$cities)"
+        return "Region(countryIsoCode=$countryIsoCode, subdivision1Code='$subdivision1Code', " +
+            "subdivision1Name='$subdivision1Name', subdivision2Code=$subdivision2Code, " +
+            "subdivision2Name=$subdivision2Name, cities=$cities)"
     }
 
     override fun equals(other: Any?): Boolean {

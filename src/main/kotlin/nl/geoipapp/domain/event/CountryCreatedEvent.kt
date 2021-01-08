@@ -1,4 +1,4 @@
-package nl.geoipapp.domain.events
+package nl.geoipapp.domain.event
 
 import io.vertx.codegen.annotations.DataObject
 import io.vertx.core.json.JsonObject

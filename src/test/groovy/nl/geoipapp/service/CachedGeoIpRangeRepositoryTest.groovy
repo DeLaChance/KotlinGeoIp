@@ -2,8 +2,9 @@ package nl.geoipapp.service
 
 
 import nl.geoipapp.domain.GeoIpRange
-import nl.geoipapp.repository.GeoIpRangeRepository
-import nl.geoipapp.repository.CachedGeoIpRangeRepository
+import nl.geoipapp.repository.PostgreSQLClient
+import nl.geoipapp.repository.geoiprange.GeoIpRangeRepository
+import nl.geoipapp.repository.geoiprange.CachedGeoIpRangeRepository
 import spock.lang.Specification
 
 import java.util.concurrent.CompletableFuture
@@ -14,12 +15,15 @@ import static nl.geoipapp.TestUtils.*
 class CachedGeoIpRangeRepositoryTest extends Specification {
 
     GeoIpRange geoIpRange
+
+    PostgreSQLClient postGreSqlClient = GroovyMock(PostgreSQLClient.class)
+
     GeoIpRangeRepository instanceToBeTested
 
     def setup() {
         geoIpRange = createGeoIpRange()
 
-        instanceToBeTested = new CachedGeoIpRangeRepository()
+        instanceToBeTested = new CachedGeoIpRangeRepository(postGreSqlClient)
         instanceToBeTested.geoIpRangesList.add(geoIpRange)
     }
 

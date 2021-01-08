@@ -57,7 +57,34 @@
         />
     </changeSet>
 
+
     <changeSet id="3" author="lvalstar">
+        <comment>Creates city table</comment>
+
+        <createTable tableName="city" schemaName="kotlingeoipapp">
+            <column name="id" type="int" autoIncrement="true">
+                <constraints primaryKey="true"/>
+            </column>
+
+            <column name="region" type="int">
+                <constraints nullable="false" foreignKeyName="fk_city_to_region" referencedTableName="region"
+                     referencedTableSchemaName="kotlingeoipapp" referencedColumnNames="id" />
+            </column>
+
+            <column name="geoIdentifier" type="varchar(64)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+
+            <column name="cityName" type="varchar(64)">
+                <constraints nullable="false"/>
+            </column>
+
+        </createTable>
+
+    </changeSet>
+
+    <changeSet id="4" author="lvalstar">
+
         <comment>Creates geoiprange table</comment>
 
         <createTable tableName="geoiprange" schemaName="kotlingeoipapp">
@@ -93,6 +120,12 @@
                 />
             </column>
 
+            <column name="city" type="int">
+                <constraints nullable="true" foreignKeyName="fk_geoiprange_to_city" referencedTableName="city"
+                     referencedTableSchemaName="kotlingeoipapp" referencedColumnNames="id"
+                />
+            </column>
+
             <column name="priority" type="int" defaultValue="0">
                 <constraints nullable="false"/>
             </column>
@@ -103,31 +136,9 @@
             unique="false">
 
             <column name="beginIpNumeric"/>
+
         </createIndex>
 
     </changeSet>
-
-    <changeSet id="4" author="lvalstar">
-        <comment>Creates city table</comment>
-
-        <createTable tableName="city" schemaName="kotlingeoipapp">
-            <column name="id" type="int" autoIncrement="true">
-                <constraints primaryKey="true"/>
-            </column>
-
-            <column name="region" type="int">
-                <constraints nullable="false" foreignKeyName="fk_city_to_region" referencedTableName="region"
-                     referencedTableSchemaName="kotlingeoipapp" referencedColumnNames="id"
-                />
-            </column>
-
-            <column name="name" type="varchar(64)">
-                <constraints nullable="false"/>
-            </column>
-
-        </createTable>
-
-    </changeSet>
-
 
 </databaseChangeLog>

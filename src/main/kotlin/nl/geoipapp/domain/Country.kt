@@ -10,7 +10,7 @@ class Country(val isoCode2: String, val name: String, val regions: MutableSet<Re
     constructor(jsonObject: JsonObject) : this(
         jsonObject.getString("isoCode2", null),
         jsonObject.getString("name", null),
-            Region.from(jsonObject.getJsonArray("regions", JsonArray()))
+        Region.from(jsonObject.getJsonArray("regions", JsonArray()))
     )
 
     fun toJson(): JsonObject  {

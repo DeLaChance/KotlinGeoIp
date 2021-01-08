@@ -1,14 +1,15 @@
-package nl.geoipapp.repository
+package nl.geoipapp.repository.geoiprange
 
 import io.vertx.core.AsyncResult
 import io.vertx.core.Future
 import io.vertx.core.Handler
 import nl.geoipapp.domain.GeoIpRange
+import nl.geoipapp.repository.PostgreSQLClient
 import nl.geoipapp.util.GEO_IP_RANGE_COMPARATOR_BY_PRIORITY
 import nl.geoipapp.util.ipToNumeric
 import java.util.stream.Collectors
 
-class CachedGeoIpRangeRepository : GeoIpRangeRepository {
+class CachedGeoIpRangeRepository(val postgreSQLClient: PostgreSQLClient) : GeoIpRangeRepository {
 
     /**
      * List should be sorted on property 'beginIpNum' of {@link GeoIpRange}.
@@ -35,6 +36,10 @@ class CachedGeoIpRangeRepository : GeoIpRangeRepository {
                 handler.handle(Future.succeededFuture())
             }
         }
+    }
+
+    override fun saveSingle(geoIpRange: GeoIpRange, handler: Handler<AsyncResult<Void>>) {
+        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
 
     private fun findByIpAddress(ipAddressV4: String?): GeoIpRange? {

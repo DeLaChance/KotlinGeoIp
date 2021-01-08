@@ -10,11 +10,16 @@ import io.vertx.kotlin.coroutines.CoroutineVerticle
 import io.vertx.kotlin.coroutines.dispatcher
 import kotlinx.coroutines.launch
 import nl.geoipapp.adapter.http.CountryDto
-import nl.geoipapp.domain.Country
-import nl.geoipapp.repository.CountryRepository
-import nl.geoipapp.repository.createPostGreSQLBackedRepositoryProxy
-import nl.geoipapp.repository.findAllCountriesAwait
-import nl.geoipapp.repository.findCountryAwait
+import nl.geoipapp.adapter.http.GeoIpRangeQuery
+import nl.geoipapp.adapter.http.GeoIpRangeQueryResponse
+import nl.geoipapp.domain.GeoIpRange
+import nl.geoipapp.repository.country.CountryRepository
+import nl.geoipapp.repository.country.createPostGreSQLBackedRepositoryProxy
+import nl.geoipapp.repository.country.findAllCountriesAwait
+import nl.geoipapp.repository.country.findCountryByIdAwait
+import nl.geoipapp.repository.geoiprange.GeoIpRangeRepository
+import nl.geoipapp.repository.geoiprange.createProxy
+import nl.geoipapp.repository.geoiprange.findByIpAddressAwait
 import nl.geoipapp.util.addAll
 import nl.geoipapp.util.getNestedInteger
 import nl.geoipapp.util.getNestedString
@@ -26,6 +31,7 @@ class HttpServerVerticle : CoroutineVerticle() {
     val LOG = LoggerFactory.getLogger(HttpServerVerticle::class.java)
 
     lateinit var countryRepository: CountryRepository
+    lateinit var geoIpRangeRepository: GeoIpRangeRepository
 
     override suspend fun start() {
 
@@ -33,9 +39,11 @@ class HttpServerVerticle : CoroutineVerticle() {
         val router = Router.router(vertx)
 
         countryRepository = createPostGreSQLBackedRepositoryProxy(vertx)
+        geoIpRangeRepository = createProxy(vertx)
 
         router.get("/api/countries/:isoCode").coroutineHandler(findCountryByIsoCode())
         router.get("/api/countries").coroutineHandler(findAllCountries())
+        router.get("/api/geoipranges/:ipAddress").coroutineHandler(findGeoIpRangeByIpAddress())
 
         var port: Int = vertx.orCreateContext.config().getNestedInteger("http.port", 8080)
         var host: String = vertx.orCreateContext.config().getNestedString("http.server", "localhost")
@@ -68,9 +76,25 @@ class HttpServerVerticle : CoroutineVerticle() {
     private suspend fun findCountryByIsoCode(): suspend (RoutingContext) -> Unit {
         return { routingContext ->
             val isoCode = routingContext.request().getParam("isoCode")
-            val country: CountryDto? = CountryDto.fromNullable(countryRepository.findCountryAwait(isoCode))
+            val country: CountryDto? = CountryDto.fromNullable(countryRepository.findCountryByIdAwait(isoCode))
             routingContext.sendJsonResponse(country?.toJson())
         }
     }
+
+    private suspend fun findGeoIpRangeByIpAddress(): suspend (RoutingContext) -> Unit {
+        return { routingContext ->
+            val ipAddress = routingContext.request().getParam("ipAddress")
+            val query = GeoIpRangeQuery(ipAddress)
+            val geoIpRange: GeoIpRange? = geoIpRangeRepository.findByIpAddressAwait(ipAddress)
+            if (geoIpRange == null) {
+                routingContext.notFound()
+            } else {
+                routingContext.sendJsonResponse(GeoIpRangeQueryResponse.from(geoIpRange, query).toJson())
+            }
+
+        }
+    }
+
+    private fun RoutingContext.notFound() = fail(404)
 
 }

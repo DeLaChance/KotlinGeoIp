@@ -15,21 +15,22 @@ import io.vertx.kotlin.coroutines.dispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import nl.geoipapp.configuration.EventBusAddress
+import nl.geoipapp.domain.City
 import nl.geoipapp.domain.Country
 import nl.geoipapp.domain.Region
 import nl.geoipapp.domain.command.ClearDataCommand
-import nl.geoipapp.domain.events.CityCreatedEvent
-import nl.geoipapp.domain.events.CountryCreatedEvent
-import nl.geoipapp.domain.events.RegionCreatedEvent
+import nl.geoipapp.domain.event.CityCreatedEvent
+import nl.geoipapp.domain.event.CountryCreatedEvent
+import nl.geoipapp.domain.event.GeoIpRangeCreatedEvent
+import nl.geoipapp.domain.event.RegionCreatedEvent
 import nl.geoipapp.util.getNestedString
-import nl.geoipapp.util.isValidIpV4Range
+import nl.geoipapp.util.isValidCidrIp
 import org.apache.commons.lang3.RegExUtils
 import org.apache.commons.lang3.StringUtils
 import org.apache.commons.lang3.StringUtils.isNotBlank
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import java.io.FileNotFoundException
-import java.lang.Exception
 import kotlin.coroutines.CoroutineContext
 
 private const val PRINT_JOB_STATUS_LINE_FREQUENCY = 1000
@@ -176,7 +177,7 @@ class MaxMindGeoDataImporter(val vertx: Vertx) : GeoDataImporter, CoroutineScope
             success = true
 
             val newRegion = Region(null, countryIso, regionSubdivision1Code, regionSubdivision1Name, regionSubdivision2Code,
-                regionSubdivision2Name, mutableSetOf(cityName))
+                regionSubdivision2Name, mutableListOf())
             if (!jobStatus.newRegions.contains(newRegion.stringIdentifier)) {
 
                 throwRegionCreatedEvent(newRegion, countryIso)
@@ -184,7 +185,9 @@ class MaxMindGeoDataImporter(val vertx: Vertx) : GeoDataImporter, CoroutineScope
             }
 
             if (cityName != null) {
-                throwCityCreatedEvent(newRegion, cityName)
+                val city = City(intIdentifier = null, geoNameIdentifier = geoIdentifier, cityName = cityName,
+                    regionIntIdentifier = null)
+                throwCityCreatedEvent(newRegion, city)
             }
         }
 
@@ -225,8 +228,6 @@ class MaxMindGeoDataImporter(val vertx: Vertx) : GeoDataImporter, CoroutineScope
 
     private fun isValidGeoIpRangeLine(line: String): Boolean {
 
-        // network,geoname_id,registered_country_geoname_id,represented_country_geoname_id,
-        // is_anonymous_proxy,is_satellite_provider,postal_code,latitude,longitude,accuracy_radius
         var isValid: Boolean
 
         if (line == null) {
@@ -239,7 +240,7 @@ class MaxMindGeoDataImporter(val vertx: Vertx) : GeoDataImporter, CoroutineScope
 
             if (isValid) {
                 val ipRange = elements[0]
-                isValid = isValid && isValidIpV4Range(ipRange)
+                isValid = isValid && isValidCidrIp(ipRange)
 
                 val geoIdentifier = elements[1]
                 isValid = isValid && isNotBlank(geoIdentifier)
@@ -251,6 +252,13 @@ class MaxMindGeoDataImporter(val vertx: Vertx) : GeoDataImporter, CoroutineScope
         }
 
         return isValid
+    }
+
+    private suspend fun processGeoIpRangeLine(line: String, jobStatus: JobStatus) {
+        val elements: List<String> = line.split(",")
+        val ipRange = elements[0]
+        val geoIdentifier = elements[1]
+        throwGeoIpRangeCreatedEvent(ipRange, geoIdentifier)
     }
 
     private fun cleanUpString(input: String): String = RegExUtils.replaceAll(input, "[\"\']", "")
@@ -265,8 +273,13 @@ class MaxMindGeoDataImporter(val vertx: Vertx) : GeoDataImporter, CoroutineScope
         sendPayloadToEventBus(eventPayload)
     }
 
-    private suspend fun throwCityCreatedEvent(region: Region, cityName: String) {
-        val eventPayload = CityCreatedEvent(region, cityName).toJson()
+    private suspend fun throwCityCreatedEvent(region: Region, city: City) {
+        val eventPayload = CityCreatedEvent(region, city).toJson()
+        sendPayloadToEventBus(eventPayload)
+    }
+
+    private suspend fun throwGeoIpRangeCreatedEvent(ipRange: String, geoIdentifier: String) {
+        val eventPayload = GeoIpRangeCreatedEvent(ipRange, geoIdentifier).toJson()
         sendPayloadToEventBus(eventPayload)
     }
 
