@@ -24,7 +24,7 @@ class TestUtils {
     static GeoIpRange createGeoIpRange() {
         return new GeoIpRange(0, IpAddressUtilsKt.ipToNumeric("0.0.0.0"), IpAddressUtilsKt
             .ipToNumeric("1.1.1.1"), "0.0.0.0", "1.1.1.1", NETHERLANDS_COUNTRY,
-            NOORD_BRABANT_REGION, EINDHOVEN, 0)
+            NOORD_BRABANT_REGION, EINDHOVEN, 0, "NL", "22901903", "22901901")
     }
 
     static Country createNetherlandsCountry() {

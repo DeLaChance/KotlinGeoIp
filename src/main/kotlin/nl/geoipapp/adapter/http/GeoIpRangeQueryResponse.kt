@@ -1,6 +1,7 @@
 package nl.geoipapp.adapter.http
 
 import io.vertx.core.json.JsonObject
+import nl.geoipapp.domain.Country
 import nl.geoipapp.domain.GeoIpRange
 
 class GeoIpRangeQueryResponse(
@@ -16,9 +17,13 @@ class GeoIpRangeQueryResponse(
 
     companion object {
 
-        fun from(geoIpRange: GeoIpRange, query: GeoIpRangeQuery): GeoIpRangeQueryResponse = GeoIpRangeQueryResponse(
-            query = query,
-            country = CountryDto.from(geoIpRange.country, geoIpRange.region, geoIpRange?.city?.cityName)
-        )
+        fun from(geoIpRange: GeoIpRange, query: GeoIpRangeQuery): GeoIpRangeQueryResponse? {
+            if (geoIpRange.country == null || geoIpRange.region == null) {
+                return null
+            } else {
+                return GeoIpRangeQueryResponse(query = query, country = CountryDto.from(geoIpRange.country,
+                    geoIpRange.region, geoIpRange?.city?.cityName))
+            }
+        }
     }
 }

@@ -19,7 +19,7 @@ import nl.geoipapp.repository.country.findAllCountriesAwait
 import nl.geoipapp.repository.country.findCountryByIdAwait
 import nl.geoipapp.repository.geoiprange.GeoIpRangeRepository
 import nl.geoipapp.repository.geoiprange.createProxy
-import nl.geoipapp.repository.geoiprange.findByIpAddressAwait
+import nl.geoipapp.repository.geoiprange.queryAwait
 import nl.geoipapp.util.addAll
 import nl.geoipapp.util.getNestedInteger
 import nl.geoipapp.util.getNestedString
@@ -85,11 +85,11 @@ class HttpServerVerticle : CoroutineVerticle() {
         return { routingContext ->
             val ipAddress = routingContext.request().getParam("ipAddress")
             val query = GeoIpRangeQuery(ipAddress)
-            val geoIpRange: GeoIpRange? = geoIpRangeRepository.findByIpAddressAwait(ipAddress)
+            val geoIpRange: GeoIpRange? = geoIpRangeRepository.queryAwait(ipAddress)
             if (geoIpRange == null) {
                 routingContext.notFound()
             } else {
-                routingContext.sendJsonResponse(GeoIpRangeQueryResponse.from(geoIpRange, query).toJson())
+                routingContext.sendJsonResponse(GeoIpRangeQueryResponse.from(geoIpRange, query)?.toJson())
             }
 
         }

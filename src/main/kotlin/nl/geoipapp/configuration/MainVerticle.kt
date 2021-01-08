@@ -33,6 +33,7 @@ import nl.geoipapp.domain.Country
 import nl.geoipapp.domain.GeoIpRange
 import nl.geoipapp.domain.Region
 import nl.geoipapp.domain.command.ClearCountriesDataCommand
+import nl.geoipapp.domain.command.ClearGeoIpRangesDataCommand
 import nl.geoipapp.domain.event.CityCreatedEvent
 import nl.geoipapp.domain.event.CountryCreatedEvent
 import nl.geoipapp.domain.event.GeoIpRangeCreatedEvent
@@ -101,8 +102,8 @@ class MainVerticle : CoroutineVerticle() {
     LOG.info("Start setting up services")
 
     setupPostGreSqlClient()
-    setupGeoIpRangeService()
     setupPostGreSQLBackedCountryRepository()
+    setupGeoIpRangeService()
     setupGeoIpDataImporter()
     setupShellService()
 
@@ -145,7 +146,7 @@ class MainVerticle : CoroutineVerticle() {
   }
 
   private fun setupGeoIpRangeService() {
-    var delegate = create(postGreSqlClient)
+    var delegate = create(postGreSqlClient, countryRepository)
     ServiceBinder(vertx)
       .setAddress(GEO_IPRANGE_SERVICE_EVENT_BUS_ADDRESS)
       .register(GeoIpRangeRepository::class.java, delegate)
@@ -211,6 +212,8 @@ class MainVerticle : CoroutineVerticle() {
             countryRepository.clearAwait()
           } else if (type == GeoIpRangeCreatedEvent::class.simpleName) {
             handleGeoIpRangeCreatedEvent(payload)
+          } else if (type == ClearGeoIpRangesDataCommand::class.simpleName) {
+            geoIpRangeRepository.clearAwait()
           }
 
           eventBusMessage.reply(generateAcknowledgement())

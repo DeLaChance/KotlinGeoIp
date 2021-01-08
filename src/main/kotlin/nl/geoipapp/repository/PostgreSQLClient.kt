@@ -33,6 +33,11 @@ class PostgreSQLClient(val vertx: Vertx) {
         return rowMapper.map(client.preparedQuery(sql).executeAwait())
     }
 
+    suspend fun <T> queryAwait(sql: String, rowMapper: RowMapper<T>, parameters: List<Any?>): List<T> {
+        log.info("Running query: $sql with $parameters")
+        return rowMapper.map(client.preparedQuery(sql).executeAwait(Tuple.wrap(parameters)))
+    }
+
     suspend fun <T> querySingleAwait(sql: String, rowMapper: RowMapper<T>, parameters: List<Any?>): T? {
         log.info("Running query: $sql with $parameters")
         return rowMapper.map(client.preparedQuery(sql).executeAwait(Tuple.wrap(parameters))).firstOrNull()

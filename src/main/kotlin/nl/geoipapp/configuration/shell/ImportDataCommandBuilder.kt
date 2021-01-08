@@ -6,6 +6,7 @@ import io.vertx.ext.shell.command.CommandProcess
 import io.vertx.ext.shell.command.impl.CommandBuilderImpl
 import nl.geoipapp.service.GeoDataImporter
 import nl.geoipapp.service.readCountriesAwait
+import nl.geoipapp.service.readGeoIpRangesAwait
 import org.slf4j.LoggerFactory
 
 class ImportDataCommandBuilder(val geoDataImporter: GeoDataImporter) : CommandBuilderImpl(
@@ -23,14 +24,18 @@ class ImportDataCommandBuilder(val geoDataImporter: GeoDataImporter) : CommandBu
             try {
                 process.writeLine("${process.args().size}")
                 val type: String? = process.args()?.first()
-                if (type == "countries") {
-                    process.writeLine("Starting all countries and regions import.\n")
-                    geoDataImporter.readCountriesAwait()
-                    process.writeLine("Finished all countries and regions import.\n")
-                } else if (type == "geoipranges") {
-                    TODO("Write this")
-                } else {
-                    process.writeLine("Type should be either 'countries' or 'geoipranges'.\n")
+                when (type) {
+                    "countries" -> {
+                        process.writeLine("Starting all countries and regions import.\n")
+                        geoDataImporter.readCountriesAwait()
+                        process.writeLine("Finished all countries and regions import.\n")
+                    }
+                    "geoipranges" -> {
+                        process.writeLine("Starting all geo ip ranges import.\n")
+                        geoDataImporter.readGeoIpRangesAwait()
+                        process.writeLine("Finished all geo ip ranges import.\n")
+                    }
+                    else -> process.writeLine("Type should be either 'countries' or 'geoipranges'.\n")
                 }
             } catch (e: Exception) {
                 process.writeLine("Error while handling command: ${e.message}.\n")

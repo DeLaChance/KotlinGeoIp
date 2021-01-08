@@ -11,12 +11,12 @@ import nl.geoipapp.domain.GeoIpRange
 interface GeoIpRangeRepository {
 
     /**
-     * Finds a {@link GeoIpRange} by an ip address (v4).
+     * Queries the geo ip ranges repository for a range containing {@code ipAddressV4}.
      *
      * @return if it exists, the {@link GeoIpRange} with the highest priority that contains the ip address. Otherwise
      * a null reference is returned.
      */
-    fun findByIpAddress(ipAddressV4: String, handler: Handler<AsyncResult<GeoIpRange?>>)
+    fun query(ipAddressV4: String, handler: Handler<AsyncResult<GeoIpRange?>>)
 
     /**
      * Adds a single {@link GeoIpRange} to the index. Existing or overlapping ranges are updated w.r.t. the highest
@@ -29,5 +29,7 @@ interface GeoIpRangeRepository {
      * priority.
      */
     fun save(geoIpRanges: List<GeoIpRange>, handler: Handler<AsyncResult<Void>>)
+
+    fun clear(handler: Handler<AsyncResult<Void>>)
 }
 

@@ -13,10 +13,13 @@ class GeoIpRange(
         val endIpNumeric: Int,
         val beginIp: String,
         val endIp: String,
-        val country: Country,
-        val region: Region,
+        val country: Country?,
+        val region: Region?,
         val city: City?,
-        val priority: Int) {
+        val priority: Int,
+        val countryIso: String,
+        val regionGeoIdentifier: String,
+        val cityGeoIdentifier: String?) {
 
     constructor(jsonObject: JsonObject) : this(
         jsonObject.getInteger("id", 0),
@@ -27,7 +30,10 @@ class GeoIpRange(
         Country.from(jsonObject.getJsonObject("country", null)),
         Region.from(jsonObject.getJsonObject("region", null)),
         City(jsonObject.getJsonObject("city", null)),
-        jsonObject.getInteger("priority", 0)
+        jsonObject.getInteger("priority", 0),
+        jsonObject.getString("countryIso", null),
+        jsonObject.getString("regionGeoIdentifier", null),
+        jsonObject.getString("cityGeoIdentifier", null)
     )
 
     fun toJson(): JsonObject  {
@@ -38,6 +44,9 @@ class GeoIpRange(
         jsonObject.put("beginIp", beginIp)
         jsonObject.put("endIp", endIp)
         jsonObject.put("priority", priority)
+        jsonObject.put("countryIso", countryIso)
+        jsonObject.put("regionGeoIdentifier", regionGeoIdentifier)
+        jsonObject.put("cityGeoIdentifier", cityGeoIdentifier)
 
         if (country != null) {
             jsonObject.put("country", country.toJson())
@@ -58,6 +67,14 @@ class GeoIpRange(
         return ipNumeric in (beginIpNumeric..endIpNumeric)
     }
 
+
+
+    override fun toString(): String {
+        return "GeoIpRange(id=$id, beginIpNumeric=$beginIpNumeric, endIpNumeric=$endIpNumeric, beginIp='$beginIp', " +
+            "endIp='$endIp', country=$country, region=$region, city=$city, priority=$priority, " +
+            "countryIso='$countryIso', regionGeoIdentifier='$regionGeoIdentifier', cityGeoIdentifier=$cityGeoIdentifier)"
+    }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -73,6 +90,9 @@ class GeoIpRange(
         if (region != other.region) return false
         if (city != other.city) return false
         if (priority != other.priority) return false
+        if (countryIso != other.countryIso) return false
+        if (regionGeoIdentifier != other.regionGeoIdentifier) return false
+        if (cityGeoIdentifier != other.cityGeoIdentifier) return false
 
         return true
     }
@@ -83,16 +103,14 @@ class GeoIpRange(
         result = 31 * result + endIpNumeric
         result = 31 * result + beginIp.hashCode()
         result = 31 * result + endIp.hashCode()
-        result = 31 * result + country.hashCode()
-        result = 31 * result + region.hashCode()
+        result = 31 * result + (country?.hashCode() ?: 0)
+        result = 31 * result + (region?.hashCode() ?: 0)
         result = 31 * result + (city?.hashCode() ?: 0)
         result = 31 * result + priority
+        result = 31 * result + countryIso.hashCode()
+        result = 31 * result + regionGeoIdentifier.hashCode()
+        result = 31 * result + (cityGeoIdentifier?.hashCode() ?: 0)
         return result
-    }
-
-    override fun toString(): String {
-        return "GeoIpRange(id=$id, beginIpNumeric=$beginIpNumeric, endIpNumeric=$endIpNumeric, beginIp='$beginIp', " +
-            "endIp='$endIp', country=$country, region=$region, city=$city, priority=$priority)"
     }
 
     companion object {
@@ -105,7 +123,8 @@ class GeoIpRange(
 
             return GeoIpRange(id = null, beginIp = ipAddressLow, endIp = ipAddressHigh,
                 beginIpNumeric = ipAddressLowNumeric, endIpNumeric = ipAddressHighNumeric, region = region,
-                country = country, city = city, priority = 0)
+                country = country, city = city, priority = 0, countryIso = country.isoCode2,
+                regionGeoIdentifier = region.geoIdentifier, cityGeoIdentifier = city?.geoNameIdentifier )
         }
     }
 

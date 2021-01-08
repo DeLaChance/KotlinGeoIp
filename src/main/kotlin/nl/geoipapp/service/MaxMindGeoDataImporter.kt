@@ -19,6 +19,7 @@ import nl.geoipapp.domain.City
 import nl.geoipapp.domain.Country
 import nl.geoipapp.domain.Region
 import nl.geoipapp.domain.command.ClearCountriesDataCommand
+import nl.geoipapp.domain.command.ClearGeoIpRangesDataCommand
 import nl.geoipapp.domain.event.CityCreatedEvent
 import nl.geoipapp.domain.event.CountryCreatedEvent
 import nl.geoipapp.domain.event.GeoIpRangeCreatedEvent
@@ -48,13 +49,16 @@ class MaxMindGeoDataImporter(val vertx: Vertx) : GeoDataImporter, CoroutineScope
         launch {
             clearExistingData()
             readCountriesAwait()
-            readGeoIpRangesAwait()
             handler.handle(Future.succeededFuture())
         }
     }
 
     override fun readGeoIpRanges(handler: Handler<AsyncResult<Void>>) {
-        handler.handle(Future.succeededFuture())
+        launch {
+            clearExistingGeoIpRangesData()
+            readGeoIpRangesAwait()
+            handler.handle(Future.succeededFuture())
+        }
     }
 
     private fun geoIpRangesFileLocation(): String {
@@ -73,6 +77,11 @@ class MaxMindGeoDataImporter(val vertx: Vertx) : GeoDataImporter, CoroutineScope
 
     private suspend fun clearExistingData() {
         val clearDataCommand = ClearCountriesDataCommand()
+        sendPayloadToEventBus(clearDataCommand.toJson())
+    }
+
+    private suspend fun clearExistingGeoIpRangesData() {
+        val clearDataCommand = ClearGeoIpRangesDataCommand()
         sendPayloadToEventBus(clearDataCommand.toJson())
     }
 
