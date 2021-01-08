@@ -46,8 +46,8 @@ class CountryRowMapper : RowMapper<Country> {
         } else {
             return Region(
                 regionIntIdentifier,
-                row.getString("isoCode2"),
                 row.getString("regionGeoIdentifier"),
+                row.getString("isoCode2"),
                 row.getString("subdivision1Code"),
                 row.getString("subdivision1Name"),
                 row.getString("subdivision2Code"),
@@ -59,16 +59,20 @@ class CountryRowMapper : RowMapper<Country> {
 
     private fun mapCity(row:Row): City? {
 
-        val cityGeoIdentifier: String = row.getString("cityGeoIdentifier")
-        val cityName: String = row.getString("cityName")
-        val regionIntIdentifier = row.getInteger("regionIntIdentifier")
+        val cityGeoIdentifier: String? = row.getString("cityGeoIdentifier")
+        if (cityGeoIdentifier == null) {
+            return null
+        } else {
+            val cityName: String = row.getString("cityName")
+            val regionIntIdentifier = row.getInteger("regionIntIdentifier")
 
-        return City(
-            intIdentifier = row.getInteger("cityIdentifier"),
-            geoNameIdentifier = cityGeoIdentifier,
-            cityName = cityName,
-            regionIntIdentifier = regionIntIdentifier
-        )
+            return City(
+                intIdentifier = row.getInteger("cityIdentifier"),
+                geoNameIdentifier = cityGeoIdentifier,
+                cityName = cityName,
+                regionIntIdentifier = regionIntIdentifier
+            )
+        }
     }
 
 }

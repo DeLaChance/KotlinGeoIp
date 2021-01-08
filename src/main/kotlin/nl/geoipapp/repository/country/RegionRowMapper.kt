@@ -16,8 +16,8 @@ class RegionRowMapper : RowMapper<Region> {
         val id = row.getInteger("id")
         return Region(
             id,
-            row.getString("isoCode2"),
             row.getString("regionGeoIdentifier"),
+            row.getString("isoCode2"),
             row.getString("subdivision1Code"),
             row.getString("subdivision1Name"),
             row.getString("subdivision2Code"),

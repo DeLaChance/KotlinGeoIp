@@ -5,11 +5,16 @@ class JobStatus(
     var successCount: Int = 0,
     var errorCount: Int = 0,
     var skippedCount: Int = 0,
-    val geoIdentifiers: MutableSet<String> = mutableSetOf(),
-    val newCountries: MutableSet<String> = mutableSetOf()
+    val geoIdentifiers: MutableSet<String> = mutableSetOf()
 ) {
 
     override fun toString(): String {
         return "JobStatus(totalCount=$totalCount, successCount=$successCount, errorCount=$errorCount, skippedCount=$skippedCount)"
     }
+}
+
+enum class ImportType {
+    COUNTRIES,
+    REGIONS,
+    CITIES
 }

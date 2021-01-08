@@ -43,7 +43,7 @@ class HttpServerVerticle : CoroutineVerticle() {
 
         router.get("/api/countries/:isoCode").coroutineHandler(findCountryByIsoCode())
         router.get("/api/countries").coroutineHandler(findAllCountries())
-        router.get("/api/geoipranges/:ipAddress").coroutineHandler(findGeoIpRangeByIpAddress())
+        router.get("/api/geoipranges/query/:ipAddress").coroutineHandler(findGeoIpRangeByIpAddress())
 
         var port: Int = vertx.orCreateContext.config().getNestedInteger("http.port", 8080)
         var host: String = vertx.orCreateContext.config().getNestedString("http.server", "localhost")

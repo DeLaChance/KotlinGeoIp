@@ -17,6 +17,8 @@ class Region(
         val cities: MutableList<City>?
     ) {
 
+    val stringIdentifier = "$countryIsoCode $subdivision1Code $subdivision2Code"
+
     constructor(jsonObject: JsonObject) : this(
         jsonObject.getInteger("intIdentifier", null),
         jsonObject.getString("geoIdentifier", null),

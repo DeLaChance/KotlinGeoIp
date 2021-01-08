@@ -48,7 +48,12 @@ class MaxMindGeoDataImporter(val vertx: Vertx) : GeoDataImporter, CoroutineScope
     override fun readCountries(handler: Handler<AsyncResult<Void>>) {
         launch {
             clearExistingData()
-            readCountriesAwait()
+
+            val jobStatus = JobStatus()
+            readCountriesAwait(ImportType.COUNTRIES, jobStatus)
+            readCountriesAwait(ImportType.REGIONS, jobStatus)
+            readCountriesAwait(ImportType.CITIES, jobStatus)
+
             handler.handle(Future.succeededFuture())
         }
     }
@@ -85,7 +90,7 @@ class MaxMindGeoDataImporter(val vertx: Vertx) : GeoDataImporter, CoroutineScope
         sendPayloadToEventBus(clearDataCommand.toJson())
     }
 
-    private suspend fun readCountriesAwait() {
+    private suspend fun readCountriesAwait(importType: ImportType, jobStatus: JobStatus) {
         /*
          * TODO: feels stupid to do this, as this is also defined in GeoDataImporterConfig.kt, but do not see an
          * alternative while using suspend-functions like (readFileAwait) for now.
@@ -99,15 +104,12 @@ class MaxMindGeoDataImporter(val vertx: Vertx) : GeoDataImporter, CoroutineScope
         val lines: List<String> = fileContentsBuffer.toString().split("\n")
 
         log.info("There are ${lines.size} lines in file $countriesFileLocation")
-
-        val jobStatus = JobStatus()
-
         try {
             log.info("Start processing input coutries and regions...")
 
             for (line in lines) {
                 if (isValidCountriesLine(line)) {
-                    processCountriesAndRegionsLine(line, jobStatus)
+                    processCountriesAndRegionsLine(line, jobStatus, importType)
                 }
             }
 
@@ -146,7 +148,7 @@ class MaxMindGeoDataImporter(val vertx: Vertx) : GeoDataImporter, CoroutineScope
         return isValid
     }
 
-    private suspend fun processCountriesAndRegionsLine(line: String, jobStatus: JobStatus) {
+    private suspend fun processCountriesAndRegionsLine(line: String, jobStatus: JobStatus, importType: ImportType) {
 
         jobStatus.totalCount += 1
         if (jobStatus.totalCount % PRINT_JOB_STATUS_LINE_FREQUENCY == 0) {
@@ -157,10 +159,10 @@ class MaxMindGeoDataImporter(val vertx: Vertx) : GeoDataImporter, CoroutineScope
         val geoIdentifier = elements[0]
         val countryIso = cleanUpString(elements[4])
         val countryName = cleanUpString(elements[5])
-        val regionSubdivision1Code =  cleanUpString(elements[6])
-        val regionSubdivision1Name =  cleanUpString(elements[7])
-        val regionSubdivision2Code =  cleanUpString(elements[8])
-        val regionSubdivision2Name=  cleanUpString(elements[9])
+        val regionSubdivision1Code = cleanUpString(elements[6])
+        val regionSubdivision1Name = cleanUpString(elements[7])
+        val regionSubdivision2Code = cleanUpString(elements[8])
+        val regionSubdivision2Name = cleanUpString(elements[9])
         val cityName = cleanUpString(elements[10])
 
         if (geoIdentifier == null || geoIdentifier.isBlank() || jobStatus.geoIdentifiers.contains(geoIdentifier)) {
@@ -168,32 +170,36 @@ class MaxMindGeoDataImporter(val vertx: Vertx) : GeoDataImporter, CoroutineScope
             return
         }
 
-        jobStatus.geoIdentifiers.add(geoIdentifier)
-
         var success = false
 
-        if (countryIso?.isNotBlank()) {
-            if (!jobStatus.newCountries.contains(countryIso)) {
-                success = true
-                jobStatus.newCountries.add(countryIso)
-
-                val newCountry = Country(countryIso, countryName, mutableSetOf())
-                throwCountryCreatedEvent(newCountry)
-            }
-        }
-
-        if (regionSubdivision1Code?.isNotBlank()) {
+        if (importType == ImportType.COUNTRIES && countryIso.isNotBlank() && regionSubdivision1Code.isNullOrBlank()
+            && cityName.isNullOrBlank()) {
+            // Country has country code but no region code and no city
             success = true
+            jobStatus.geoIdentifiers.add(geoIdentifier)
+
+            val newCountry = Country(countryIso, countryName, mutableSetOf())
+            throwCountryCreatedEvent(newCountry)
+        } else if (importType == ImportType.REGIONS && regionSubdivision1Code.isNotBlank() && cityName.isNullOrBlank()) {
+            // Region has country code and region code and no city
+            success = true
+            jobStatus.geoIdentifiers.add(geoIdentifier)
 
             val newRegion = Region(null, geoIdentifier, countryIso, regionSubdivision1Code,
                 regionSubdivision1Name, regionSubdivision2Code, regionSubdivision2Name, mutableListOf())
             throwRegionCreatedEvent(newRegion, countryIso)
+        } else if (importType == ImportType.CITIES && countryIso.isNotBlank() && regionSubdivision1Code.isNotBlank()
+            && cityName.isNotBlank()) {
 
-            if (cityName != null) {
-                val city = City(intIdentifier = null, geoNameIdentifier = geoIdentifier, cityName = cityName,
-                    regionIntIdentifier = null)
-                throwCityCreatedEvent(newRegion, city)
-            }
+            success = true
+            jobStatus.geoIdentifiers.add(geoIdentifier)
+
+            val city = City(intIdentifier = null, geoNameIdentifier = geoIdentifier, cityName = cityName,
+                regionIntIdentifier = null)
+            // TODO: we do not know the region geo identifier here. Can this be fixed?
+            val existingRegion = Region(null, "", countryIso, regionSubdivision1Code,
+                regionSubdivision1Name, regionSubdivision2Code, regionSubdivision2Name, mutableListOf())
+            throwCityCreatedEvent(existingRegion, city)
         }
 
         if (success) {

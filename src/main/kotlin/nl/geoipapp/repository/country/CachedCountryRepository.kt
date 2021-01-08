@@ -18,14 +18,14 @@ class CachedCountryRepository(val postgreSQLClient: PostgreSQLClient) : CountryR
     // TODO: create a more standardized-frameworky way to handle database entities
     private val findAllCountriesSql = "select c.\"isoCode2\",c.\"name\"," +
         "r.\"subdivision1Code\",r.\"subdivision1Name\",r.\"subdivision2Code\",r.\"subdivision2Name\"," +
-        "r.\"id\" as \"regionIdentifier\"\n, r.\"geoIdentifier\" as \"regionGeoIdentifier\"" +
-        "ci.\"name\" as \"cityName\",ci.\"cityGeoIdentifier\" as \"cityGeoIdentifier\"," +
-        "ci.\"id\" as \"cityIdentifier\"\n" +
+        "r.\"id\" as \"regionIdentifier\"\n, r.\"geoIdentifier\" as \"regionGeoIdentifier\"," +
+        "ci.\"cityName\" as \"cityName\",ci.\"geoIdentifier\" as \"cityGeoIdentifier\",ci.\"id\" as \"cityIdentifier\", " +
+        "ci.\"region\" as \"regionIntIdentifier\"\n" +
         "from kotlingeoipapp.kotlingeoipapp.country c\n" +
         "left join kotlingeoipapp.kotlingeoipapp.region r on r.\"country\" = c.\"isoCode2\"\n" +
         "left join kotlingeoipapp.kotlingeoipapp.city ci on ci.\"region\" = r.\"id\""
-    private val findCountryByIdSql = "select c.\"isoCode2\", c.\"name\" from kotlingeoipapp.kotlingeoipapp.country c " +
-        "where c.\"isoCode2\" = $1"
+    private val findCountryByIdSql = findAllCountriesSql +
+        "\nwhere c.\"isoCode2\" = $1"
 
     private val findRegionBaseSql = "select r.\"subdivision1Code\", r.\"subdivision1Name\", r.\"subdivision2Code\", " +
         "r.\"subdivision2Name\", r.\"id\", r.\"country\" as \"isoCode2\",r.\"geoIdentifier\" as \"regionGeoIdentifier\"\n" +
@@ -35,9 +35,10 @@ class CachedCountryRepository(val postgreSQLClient: PostgreSQLClient) : CountryR
     private val findRegionByGeoIdentifierSql = findRegionBaseSql +
         "where r.\"geoIdentifier\"=$1"
 
-    private val findCityByGeoIdentifier = "select ci.\"name\" as \"cityName\",ci.\"cityGeoIdentifier\" " +
-        "as \"cityGeoIdentifier\",ci.\"id\" as \"cityIdentifier\"\n" +
-        "from kotlingeoipapp.kotlingeoipapp.city ci"
+    private val findCityByGeoIdentifier = "select ci.\"cityName\" as \"cityName\",ci.\"geoIdentifier\" " +
+        "as \"cityGeoIdentifier\",ci.\"id\" as \"cityIdentifier\",ci.\"region\" as \"regionIntIdentifier\"\n" +
+        "from kotlingeoipapp.kotlingeoipapp.city ci\n" +
+        "where ci.\"geoIdentifier\" = $1"
 
     private val insertCountrySql = "insert into kotlingeoipapp.kotlingeoipapp.country (\"isoCode2\", \"name\") " +
         "values (\$1,\$2)"
@@ -153,20 +154,20 @@ class CachedCountryRepository(val postgreSQLClient: PostgreSQLClient) : CountryR
         launch {
             var country = findCountryFromCache(region.countryIsoCode)
             if (country != null) {
-                val existingRegion = country.regions.find { aRegion -> aRegion.geoIdentifier == region.geoIdentifier }
+                val existingRegion = country.regions.find { aRegion -> aRegion.stringIdentifier == region.stringIdentifier }
                 if (existingRegion != null) {
                     postgreSQLClient.updateAwait(insertCity, listOf(existingRegion.intIdentifier,
                         city.cityName, city.geoNameIdentifier))
-                    saveCityToCache(region, city)
+
+                    var cityInsertedInDb = findCityByGeoIdentifierAwait(city.geoNameIdentifier)
+                    if (cityInsertedInDb != null) {
+                        saveCityToCache(region, cityInsertedInDb)
+                    }
                 }
 
-                var cityInsertedInDb = findCityByGeoIdentifierAwait(city.geoNameIdentifier)
-                if (cityInsertedInDb != null) {
-                    saveCityToCache(region, cityInsertedInDb)
-                }
-
-                handler.handle(Future.succeededFuture())
             }
+
+            handler.handle(Future.succeededFuture())
         }
     }
 
