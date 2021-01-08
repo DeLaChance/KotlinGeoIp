@@ -17,6 +17,7 @@ class RegionRowMapper : RowMapper<Region> {
         return Region(
             id,
             row.getString("isoCode2"),
+            row.getString("regionGeoIdentifier"),
             row.getString("subdivision1Code"),
             row.getString("subdivision1Name"),
             row.getString("subdivision2Code"),

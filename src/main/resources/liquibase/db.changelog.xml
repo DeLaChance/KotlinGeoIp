@@ -33,6 +33,10 @@
                 />
             </column>
 
+            <column name="geoIdentifier" type="varchar(64)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+
             <column name="subdivision1Code" type="varchar(64)">
                 <constraints nullable="false"/>
             </column>
@@ -50,11 +54,7 @@
             </column>
 
         </createTable>
-        
-        <addUniqueConstraint tableName="region" columnNames="subdivision1Code, subdivision1Name,
-            subdivision2Code, subdivision2Name, country" constraintName="region_code_unique_within_country"
-            schemaName="kotlingeoipapp"
-        />
+
     </changeSet>
 
 

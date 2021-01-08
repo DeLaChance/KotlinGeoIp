@@ -24,14 +24,14 @@ class CountryRowMapper : RowMapper<Country> {
 
             val region = mapRegion(row)
             if (region != null) {
-                if (!regionsMap.containsKey(region.stringIdentifier)) {
-                    regionsMap[region.stringIdentifier] = region
+                if (!regionsMap.containsKey(region.geoIdentifier)) {
+                    regionsMap[region.geoIdentifier] = region
                     countriesMap[isoCode]?.regions?.add(region)
                 }
 
                 val city = mapCity(row)
                 if (city != null) {
-                    regionsMap[region.stringIdentifier]?.cities?.add(city)
+                    regionsMap[region.geoIdentifier]?.cities?.add(city)
                 }
             }
         }
@@ -47,6 +47,7 @@ class CountryRowMapper : RowMapper<Country> {
             return Region(
                 regionIntIdentifier,
                 row.getString("isoCode2"),
+                row.getString("regionGeoIdentifier"),
                 row.getString("subdivision1Code"),
                 row.getString("subdivision1Name"),
                 row.getString("subdivision2Code"),

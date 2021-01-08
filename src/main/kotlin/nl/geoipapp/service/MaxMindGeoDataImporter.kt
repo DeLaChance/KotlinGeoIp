@@ -18,7 +18,7 @@ import nl.geoipapp.configuration.EventBusAddress
 import nl.geoipapp.domain.City
 import nl.geoipapp.domain.Country
 import nl.geoipapp.domain.Region
-import nl.geoipapp.domain.command.ClearDataCommand
+import nl.geoipapp.domain.command.ClearCountriesDataCommand
 import nl.geoipapp.domain.event.CityCreatedEvent
 import nl.geoipapp.domain.event.CountryCreatedEvent
 import nl.geoipapp.domain.event.GeoIpRangeCreatedEvent
@@ -72,7 +72,7 @@ class MaxMindGeoDataImporter(val vertx: Vertx) : GeoDataImporter, CoroutineScope
     }
 
     private suspend fun clearExistingData() {
-        val clearDataCommand = ClearDataCommand()
+        val clearDataCommand = ClearCountriesDataCommand()
         sendPayloadToEventBus(clearDataCommand.toJson())
     }
 
@@ -176,13 +176,9 @@ class MaxMindGeoDataImporter(val vertx: Vertx) : GeoDataImporter, CoroutineScope
         if (regionSubdivision1Code?.isNotBlank()) {
             success = true
 
-            val newRegion = Region(null, countryIso, regionSubdivision1Code, regionSubdivision1Name, regionSubdivision2Code,
-                regionSubdivision2Name, mutableListOf())
-            if (!jobStatus.newRegions.contains(newRegion.stringIdentifier)) {
-
-                throwRegionCreatedEvent(newRegion, countryIso)
-                jobStatus.newRegions.add(newRegion.stringIdentifier)
-            }
+            val newRegion = Region(null, geoIdentifier, countryIso, regionSubdivision1Code,
+                regionSubdivision1Name, regionSubdivision2Code, regionSubdivision2Name, mutableListOf())
+            throwRegionCreatedEvent(newRegion, countryIso)
 
             if (cityName != null) {
                 val city = City(intIdentifier = null, geoNameIdentifier = geoIdentifier, cityName = cityName,

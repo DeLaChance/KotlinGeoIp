@@ -4,9 +4,9 @@ import io.vertx.codegen.annotations.DataObject
 import io.vertx.core.json.JsonObject
 
 @DataObject
-class ClearDataCommand() {
+class ClearCountriesDataCommand() {
 
-    val type = ClearDataCommand::class.simpleName
+    val type = ClearCountriesDataCommand::class.simpleName
 
     constructor(jsonObject: JsonObject) : this()
 

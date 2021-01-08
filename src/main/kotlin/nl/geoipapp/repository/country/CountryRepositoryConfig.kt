@@ -21,8 +21,8 @@ suspend fun CountryRepository.findCountryByIdAwait(isoCode: String): Country? {
     return awaitResult { handler -> findCountryById(isoCode, handler) }
 }
 
-suspend fun CountryRepository.findRegionByIdAwait(id: Int): Region? {
-    return awaitResult { handler -> findRegionById(id, handler) }
+suspend fun CountryRepository.findRegionByGeoIdentifierAwait(geoNameIdentifier: String): Region? {
+    return awaitResult { handler -> findRegionByGeoIdentifier(geoNameIdentifier, handler) }
 }
 
 suspend fun CountryRepository.saveCountryAwait(country: Country): Void {

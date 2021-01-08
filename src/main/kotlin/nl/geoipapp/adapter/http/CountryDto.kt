@@ -49,7 +49,7 @@ class CountryDto(
         fun from(country: Country, selectedRegion: Region, city: String?): CountryDto {
 
             val regionDto: RegionDto? = country.regions
-                .filter{ region -> region.stringIdentifier == selectedRegion.stringIdentifier }
+                .filter{ region -> region.geoIdentifier == selectedRegion.geoIdentifier }
                 .map{ region -> RegionDto.from(region, city) }
                 .firstOrNull()
 

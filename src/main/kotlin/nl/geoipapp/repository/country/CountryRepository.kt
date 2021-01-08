@@ -15,7 +15,7 @@ interface CountryRepository {
     fun findAllCountries(handler: Handler<AsyncResult<List<Country>>>)
 
     fun findCountryById(isoCode: String, handler: Handler<AsyncResult<Country?>>)
-    fun findRegionById(id: Int, handler: Handler<AsyncResult<Region?>>)
+    fun findRegionByGeoIdentifier(geoIdentifier: String, handler: Handler<AsyncResult<Region?>>)
     fun findCityByGeoIdentifier(geoIdentifier: String, handler: Handler<AsyncResult<City?>>)
 
     fun saveCountry(country: Country, handler: Handler<AsyncResult<Void>>)

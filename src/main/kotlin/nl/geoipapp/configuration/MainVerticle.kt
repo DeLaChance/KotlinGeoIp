@@ -32,7 +32,7 @@ import nl.geoipapp.domain.City
 import nl.geoipapp.domain.Country
 import nl.geoipapp.domain.GeoIpRange
 import nl.geoipapp.domain.Region
-import nl.geoipapp.domain.command.ClearDataCommand
+import nl.geoipapp.domain.command.ClearCountriesDataCommand
 import nl.geoipapp.domain.event.CityCreatedEvent
 import nl.geoipapp.domain.event.CountryCreatedEvent
 import nl.geoipapp.domain.event.GeoIpRangeCreatedEvent
@@ -207,24 +207,10 @@ class MainVerticle : CoroutineVerticle() {
           } else if (type == CityCreatedEvent::class.simpleName) {
             val event = CityCreatedEvent(payload)
             countryRepository.addCityToRegionAwait(event.region, event.city)
-          } else if (type == ClearDataCommand::class.simpleName) {
+          } else if (type == ClearCountriesDataCommand::class.simpleName) {
             countryRepository.clearAwait()
           } else if (type == GeoIpRangeCreatedEvent::class.simpleName) {
-            // TODO: handle case of regions without cities
-
-            val event = GeoIpRangeCreatedEvent(payload)
-            val city: City? = countryRepository.findCityByGeoIdentifierAwait(event.geoNameIdentifier)
-            if (city != null && city.regionIntIdentifier != null) {
-              val region: Region? = countryRepository.findRegionByIdAwait(city.regionIntIdentifier)
-              if (region != null) {
-                val country: Country? = countryRepository.findCountryByIdAwait(region.countryIsoCode)
-                if (country != null) {
-                  val geoIpRange = GeoIpRange.from(event.cidrRange, region, country, city)
-                  geoIpRangeRepository.saveSingleAwait(geoIpRange)
-                }
-              }
-
-            }
+            handleGeoIpRangeCreatedEvent(payload)
           }
 
           eventBusMessage.reply(generateAcknowledgement())
@@ -232,6 +218,24 @@ class MainVerticle : CoroutineVerticle() {
           eventBusMessage.reply(generateError(e.message.orEmpty()))
         }
       }
+    }
+  }
+
+  private suspend fun handleGeoIpRangeCreatedEvent(payload: JsonObject) {
+
+    val event = GeoIpRangeCreatedEvent(payload)
+    val city: City? = countryRepository.findCityByGeoIdentifierAwait(event.geoNameIdentifier)
+    if (city != null && city.regionIntIdentifier != null) {
+      val region: Region? = countryRepository.findRegionByGeoIdentifierAwait(city.geoNameIdentifier)
+      if (region != null) {
+        val country: Country? = countryRepository.findCountryByIdAwait(region.countryIsoCode)
+        if (country != null) {
+          val geoIpRange = GeoIpRange.from(event.cidrRange, region, country, city)
+          geoIpRangeRepository.saveSingleAwait(geoIpRange)
+        }
+      }
+    } else {
+      // TODO: handle case of regions without cities
     }
   }
 
