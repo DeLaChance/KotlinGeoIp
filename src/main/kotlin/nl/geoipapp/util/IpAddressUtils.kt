@@ -11,9 +11,9 @@ val GEO_IP_RANGE_COMPARATOR_BY_PRIORITY: Comparator<GeoIpRange> = Comparator {
 
 val cidrPattern = Pattern.compile("(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,3})")
 
-fun ipToNumeric(ipAddressV4: String): Int {
+fun ipToNumeric(ipAddressV4: String): Long {
     val ipAddress: InetAddress = InetAddresses.forString(ipAddressV4)
-    return InetAddresses.coerceToInteger(ipAddress)
+    return InetAddresses.toBigInteger(ipAddress).toLong()
 }
 
 fun isValidCidrIp(cidrIp: String): Boolean {

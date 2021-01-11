@@ -73,8 +73,6 @@ class CachedCountryRepository(val postgreSQLClient: PostgreSQLClient) : CountryR
             var countries: List<Country>
             if (countriesMapCache.isNullOrEmpty()) {
                 countries = postgreSQLClient.queryAwait(findAllCountriesSql, rowMapper)
-
-                countries.forEach{ country -> saveCountryToCache(country) }
             } else {
                 countries = findAllCountriesFromCache()
             }
@@ -85,11 +83,9 @@ class CachedCountryRepository(val postgreSQLClient: PostgreSQLClient) : CountryR
 
     override fun findCountryById(isoCode: String, handler: Handler<AsyncResult<Country?>>) {
         launch {
-            var country: Country?
-            if (countriesMapCache.isNullOrEmpty()) {
+            var country: Country? = findCountryFromCache(isoCode)
+            if (country == null) {
                 country = postgreSQLClient.querySingleAwait(findCountryByIdSql, rowMapper, listOf(isoCode))
-            } else {
-                country = findCountryFromCache(isoCode)
             }
 
             handler.handle(Future.succeededFuture(country))
@@ -98,11 +94,9 @@ class CachedCountryRepository(val postgreSQLClient: PostgreSQLClient) : CountryR
 
     override fun findRegionById(identifier: Int, handler: Handler<AsyncResult<Region?>>) {
         launch {
-            var region: Region?
-            if (regionsMapCache.isNullOrEmpty()) {
+            var region: Region? = findRegionFromCache(identifier)
+            if (region == null) {
                 region = postgreSQLClient.querySingleAwait(findRegionById, regionRowMapper, listOf(identifier))
-            } else {
-                region = findRegionFromCache(identifier)
             }
 
             handler.handle(Future.succeededFuture(region))
@@ -111,11 +105,9 @@ class CachedCountryRepository(val postgreSQLClient: PostgreSQLClient) : CountryR
 
     override fun findRegionByGeoIdentifier(geoIdentifier: String, handler: Handler<AsyncResult<Region?>>) {
         launch {
-            var region: Region?
-            if (regionsMapCache.isNullOrEmpty()) {
+            var region: Region? = findRegionFromCache(geoIdentifier)
+            if (region == null) {
                 region = postgreSQLClient.querySingleAwait(findRegionByGeoIdentifier, regionRowMapper, listOf(geoIdentifier))
-            } else {
-                region = findRegionFromCache(geoIdentifier)
             }
 
             handler.handle(Future.succeededFuture(region))
@@ -124,11 +116,9 @@ class CachedCountryRepository(val postgreSQLClient: PostgreSQLClient) : CountryR
 
     override fun findCityByGeoIdentifier(geoIdentifier: String, handler: Handler<AsyncResult<City?>>) {
         launch {
-            var city: City?
-            if (citiesMapCache.isNullOrEmpty()) {
+            var city: City? = findCityFromCache(geoIdentifier)
+            if (city == null) {
                 city = postgreSQLClient.querySingleAwait(findCityByGeoIdentifier, cityRowMapper, listOf(geoIdentifier))
-            } else {
-                city = findCityFromCache(geoIdentifier)
             }
 
             handler.handle(Future.succeededFuture(city))
@@ -149,9 +139,9 @@ class CachedCountryRepository(val postgreSQLClient: PostgreSQLClient) : CountryR
 
     override fun addRegionToCountry(newRegion: Region, countryIso: String, handler: Handler<AsyncResult<Void>>) {
         launch {
-            var country = findCountryFromCache(countryIso)
-            if (country != null) {
-                val existingRegion = country.regions.find { aRegion -> aRegion.geoIdentifier == newRegion.geoIdentifier }
+            var existingCountry = findCountryFromCache(countryIso)
+            if (existingCountry != null) {
+                val existingRegion = existingCountry.regions.find { aRegion -> aRegion.geoIdentifier == newRegion.geoIdentifier }
                 if (existingRegion == null) {
                     postgreSQLClient.updateAwait(insertRegionSql, listOf(countryIso,
                         newRegion.subdivision1Code, newRegion.subdivision1Name, newRegion.subdivision2Code,
@@ -161,7 +151,7 @@ class CachedCountryRepository(val postgreSQLClient: PostgreSQLClient) : CountryR
                         listOf(newRegion.countryIsoCode, newRegion.subdivision1Code, newRegion.subdivision2Code))
                     if (regionInsertedInDb != null) {
                         saveRegionToCache(regionInsertedInDb)
-                        country.regions.add(newRegion)
+                        existingCountry.regions.add(regionInsertedInDb)
                     }
                 }
             }
@@ -172,17 +162,18 @@ class CachedCountryRepository(val postgreSQLClient: PostgreSQLClient) : CountryR
 
     override fun addCityToRegion(region: Region, city: City, handler: Handler<AsyncResult<Void>>) {
         launch {
-            var country = findCountryFromCache(region.countryIsoCode)
-            if (country != null) {
-                val existingRegion = country.regions.find { aRegion -> aRegion.stringIdentifier == region.stringIdentifier }
+            var existingCountry = findCountryFromCache(region.countryIsoCode)
+            if (existingCountry != null) {
+                val existingRegion = existingCountry.regions.find { aRegion -> aRegion.stringIdentifier ==
+                    region.stringIdentifier }
                 if (existingRegion != null) {
                     postgreSQLClient.updateAwait(insertCity, listOf(existingRegion.intIdentifier,
                         city.cityName, city.geoNameIdentifier))
 
                     var cityInsertedInDb = findCityByGeoIdentifierAwait(city.geoNameIdentifier)
                     if (cityInsertedInDb != null) {
-                        saveCityToCache(region, cityInsertedInDb)
-                        region.cities?.add(city)
+                        saveCityToCache(cityInsertedInDb)
+                        existingRegion.cities?.add(cityInsertedInDb)
                     }
                 }
 
@@ -194,6 +185,8 @@ class CachedCountryRepository(val postgreSQLClient: PostgreSQLClient) : CountryR
 
     override fun clear(handler: Handler<AsyncResult<Void>>) {
         launch {
+            // TODO: cascade delete on geo ip ranges
+
             log.info("Clearing all data in tables: country and region")
             postgreSQLClient.updateAwait(deleteAllCities, listOf())
             postgreSQLClient.updateAwait(deleteAllRegionsSql, listOf())
@@ -218,7 +211,7 @@ class CachedCountryRepository(val postgreSQLClient: PostgreSQLClient) : CountryR
                     saveRegionToCache(aRegion)
 
                     aRegion.cities?.forEach { aCity ->
-                        saveCityToCache(aRegion, aCity)
+                        saveCityToCache(aCity)
                     }
                 }
             }
@@ -262,7 +255,7 @@ class CachedCountryRepository(val postgreSQLClient: PostgreSQLClient) : CountryR
         log.info("Saving region to cache '${newRegion.geoIdentifier}'")
     }
 
-    private fun saveCityToCache(existingRegion: Region, city: City) {
+    private fun saveCityToCache(city: City) {
         citiesMapCache[city.geoNameIdentifier] = city
 
         log.info("Saving city to cache '${city}'")

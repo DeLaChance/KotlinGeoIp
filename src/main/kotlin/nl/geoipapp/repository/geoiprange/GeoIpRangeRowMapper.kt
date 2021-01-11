@@ -17,8 +17,8 @@ class GeoIpRangeRowMapper : RowMapper<GeoIpRange> {
         } else {
             geoIpRange = GeoIpRange(
                 id = row.getInteger("id"),
-                beginIpNumeric = row.getInteger("beginIpNumeric"),
-                endIpNumeric = row.getInteger("endIpNumeric"),
+                beginIpNumeric = row.getLong("beginIpNumeric"),
+                endIpNumeric = row.getLong("endIpNumeric"),
                 beginIp = row.getString("beginIp"),
                 endIp = row.getString("endIp"),
                 country = null,

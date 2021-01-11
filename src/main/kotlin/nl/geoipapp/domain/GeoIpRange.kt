@@ -9,8 +9,8 @@ import nl.geoipapp.util.mapToLowEndIp
 @DataObject
 class GeoIpRange(
         val id: Int?,
-        val beginIpNumeric: Int,
-        val endIpNumeric: Int,
+        val beginIpNumeric: Long,
+        val endIpNumeric: Long,
         val beginIp: String,
         val endIp: String,
         val country: Country?,
@@ -23,8 +23,8 @@ class GeoIpRange(
 
     constructor(jsonObject: JsonObject) : this(
         jsonObject.getInteger("id", 0),
-        jsonObject.getInteger("beginIpNumeric", 0),
-        jsonObject.getInteger("endIpNumeric", 0),
+        jsonObject.getLong("beginIpNumeric", 0),
+        jsonObject.getLong("endIpNumeric", 0),
         jsonObject.getString("beginIp", ""),
         jsonObject.getString("endIp", ""),
         Country.from(jsonObject.getJsonObject("country", null)),
@@ -63,11 +63,9 @@ class GeoIpRange(
         return jsonObject
     }
 
-    fun containsIpNumeric(ipNumeric: Int): Boolean {
-        return ipNumeric in (beginIpNumeric..endIpNumeric)
+    fun containsIpNumeric(ipNumeric: Long): Boolean {
+        return ipNumeric >= beginIpNumeric && ipNumeric <= endIpNumeric
     }
-
-
 
     override fun toString(): String {
         return "GeoIpRange(id=$id, beginIpNumeric=$beginIpNumeric, endIpNumeric=$endIpNumeric, beginIp='$beginIp', " +
@@ -99,8 +97,8 @@ class GeoIpRange(
 
     override fun hashCode(): Int {
         var result = id ?: 0
-        result = 31 * result + beginIpNumeric
-        result = 31 * result + endIpNumeric
+        result = 31 * result + beginIpNumeric.hashCode()
+        result = 31 * result + endIpNumeric.hashCode()
         result = 31 * result + beginIp.hashCode()
         result = 31 * result + endIp.hashCode()
         result = 31 * result + (country?.hashCode() ?: 0)

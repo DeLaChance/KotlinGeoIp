@@ -92,11 +92,11 @@
                 <constraints primaryKey="true"/>
             </column>
 
-            <column name="beginIpNumeric" type="int">
+            <column name="beginIpNumeric" type="bigint">
                 <constraints nullable="false"/>
             </column>
 
-            <column name="endIpNumeric" type="int">
+            <column name="endIpNumeric" type="bigint">
                 <constraints nullable="false"/>
             </column>
 

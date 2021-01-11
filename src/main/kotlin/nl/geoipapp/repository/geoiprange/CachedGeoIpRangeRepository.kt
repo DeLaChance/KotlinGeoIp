@@ -128,10 +128,10 @@ class CachedGeoIpRangeRepository(val postgreSQLClient: PostgreSQLClient, val cou
         )
     }
 
-    private fun queryCache(beginIpNumeric: Int): GeoIpRange? {
+    private fun queryCache(ipNumeric: Long): GeoIpRange? {
 
         val matchingRanges = geoIpRangesCache.stream()
-            .filter { it.containsIpNumeric(beginIpNumeric) }
+            .filter { it.containsIpNumeric(ipNumeric) }
             .collect(Collectors.toList())
 
         val geoIpRange: GeoIpRange?
