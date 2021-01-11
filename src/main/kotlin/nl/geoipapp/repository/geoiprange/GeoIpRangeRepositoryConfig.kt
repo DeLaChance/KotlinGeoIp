@@ -24,3 +24,7 @@ suspend fun GeoIpRangeRepository.saveSingleAwait(geoIpRange: GeoIpRange): Void {
 suspend fun GeoIpRangeRepository.clearAwait(): Void {
     return awaitResult { handler -> clear(handler) }
 }
+
+suspend fun GeoIpRangeRepository.refillCacheAwait(): Void {
+    return awaitResult { handler -> refillCache(handler) }
+}

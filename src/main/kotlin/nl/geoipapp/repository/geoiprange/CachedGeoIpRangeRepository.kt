@@ -9,9 +9,12 @@ import kotlinx.coroutines.launch
 import nl.geoipapp.domain.City
 import nl.geoipapp.domain.GeoIpRange
 import nl.geoipapp.repository.PostgreSQLClient
-import nl.geoipapp.repository.country.*
-import nl.geoipapp.util.getNestedInteger
+import nl.geoipapp.repository.country.CountryRepository
+import nl.geoipapp.repository.country.findCityByGeoIdentifierAwait
+import nl.geoipapp.repository.country.findCountryByIdAwait
+import nl.geoipapp.repository.country.findRegionByGeoIdentifierAwait
 import nl.geoipapp.util.ipToNumeric
+import org.slf4j.LoggerFactory
 import java.util.stream.Collectors
 import kotlin.coroutines.CoroutineContext
 
@@ -20,6 +23,7 @@ class CachedGeoIpRangeRepository(val postgreSQLClient: PostgreSQLClient, val cou
     GeoIpRangeRepository, CoroutineScope {
 
     private val MAX_SIZE_CACHE = 2_000
+    private val log = LoggerFactory.getLogger(CachedGeoIpRangeRepository::class.java)
 
     private val queryGeoIpRangesSql = "select gr.\"beginIpNumeric\",gr.\"endIpNumeric\",gr.\"beginIp\",gr.\"endIp\"," +
         "gr.\"country\",r.\"geoIdentifier\" as \"region\",c.\"geoIdentifier\" as \"city\",gr.\"priority\",gr.\"id\"\n" +
@@ -27,7 +31,7 @@ class CachedGeoIpRangeRepository(val postgreSQLClient: PostgreSQLClient, val cou
         "inner join kotlingeoipapp.kotlingeoipapp.region r on r.\"id\" = gr.\"region\"\n" +
         "inner join kotlingeoipapp.kotlingeoipapp.city c on c.\"id\" = gr.\"city\"\n" +
         "where gr.\"beginIpNumeric\" <= $1 and gr.\"endIpNumeric\" >= $1\n" +
-        "order by gr.\"priority\""
+        "order by gr.\"priority\" asc"
 
     private val upsertGeoIpRangeSql = "insert into kotlingeoipapp.kotlingeoipapp.geoiprange " +
         "(\"beginIpNumeric\",\"endIpNumeric\",\"beginIp\",\"endIp\",\"country\",\"region\",\"city\",\"priority\") " +
@@ -89,6 +93,13 @@ class CachedGeoIpRangeRepository(val postgreSQLClient: PostgreSQLClient, val cou
         }
     }
 
+    override fun refillCache(handler: Handler<AsyncResult<Void>>) {
+        launch {
+            clearCache()
+            handler.handle(Future.succeededFuture())
+        }
+    }
+
     private suspend fun applyJoins(geoIpRange: GeoIpRange): GeoIpRange {
 
         val city: City?
@@ -140,6 +151,7 @@ class CachedGeoIpRangeRepository(val postgreSQLClient: PostgreSQLClient, val cou
     }
 
     private fun clearCache() {
+        log.info("Clearing geo ip ranges cache...")
         geoIpRangesCache.clear()
     }
 }

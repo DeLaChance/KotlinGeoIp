@@ -1,14 +1,9 @@
 package nl.geoipapp.repository.geoiprange
 
-import io.vertx.core.Vertx
 import io.vertx.sqlclient.Row
 import io.vertx.sqlclient.RowSet
 import nl.geoipapp.domain.GeoIpRange
 import nl.geoipapp.repository.RowMapper
-import nl.geoipapp.repository.country.CityRowMapper
-import nl.geoipapp.repository.country.CountryRepository
-import nl.geoipapp.repository.country.CountryRowMapper
-import nl.geoipapp.repository.country.RegionRowMapper
 
 class GeoIpRangeRowMapper : RowMapper<GeoIpRange> {
 

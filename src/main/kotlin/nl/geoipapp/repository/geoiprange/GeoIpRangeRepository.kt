@@ -31,5 +31,7 @@ interface GeoIpRangeRepository {
     fun save(geoIpRanges: List<GeoIpRange>, handler: Handler<AsyncResult<Void>>)
 
     fun clear(handler: Handler<AsyncResult<Void>>)
+
+    fun refillCache(handler: Handler<AsyncResult<Void>>)
 }
 

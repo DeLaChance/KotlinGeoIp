@@ -269,9 +269,14 @@ class CachedCountryRepository(val postgreSQLClient: PostgreSQLClient) : CountryR
     }
 
     private fun clearCache() {
+        log.info("Clearing countries cache...")
         countriesMapCache.clear()
+
+        log.info("Clearing regions cache...")
         regionsMapCache.clear()
         regionsGeoIdentifierMapCache.clear()
+
+        log.info("Clearing cities cache...")
         citiesMapCache.clear()
     }
 }

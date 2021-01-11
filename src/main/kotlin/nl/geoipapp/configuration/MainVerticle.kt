@@ -54,7 +54,9 @@ import java.io.FileNotFoundException
 
 class MainVerticle : CoroutineVerticle() {
 
-  private val LOG = LoggerFactory.getLogger(MainVerticle::class.java)
+  private val EVERY_5_MINUTES: Long = (5 * 60 * 1000)
+
+  private val log = LoggerFactory.getLogger(MainVerticle::class.java)
   private lateinit var postGreSqlClient: PostgreSQLClient
   private lateinit var countryRepository: CountryRepository
   private lateinit var geoIpRangeRepository: GeoIpRangeRepository
@@ -70,6 +72,7 @@ class MainVerticle : CoroutineVerticle() {
     setupServices()
     startEventListeners()
     startVerticles()
+    setupPeriodicCacheClear()
   }
 
   // Optional - called when verticle is undeployed
@@ -80,7 +83,7 @@ class MainVerticle : CoroutineVerticle() {
     var configPath = "conf/config.json"
 
     if (!vertx.fileSystem().existsAwait(configPath)) {
-      LOG.info("Tried reading configuration from path ${configPath}, but does not exist. Defaulting to classpath.")
+      log.info("Tried reading configuration from path ${configPath}, but does not exist. Defaulting to classpath.")
       configPath = "config.json"
     }
 
@@ -88,7 +91,7 @@ class MainVerticle : CoroutineVerticle() {
       .setType("file")
       .setOptional(true)
       .setConfig(JsonObject().put("path", configPath))
-    LOG.info("Reading configuration from path ${configPath}")
+    log.info("Reading configuration from path ${configPath}")
 
     val configRetrieverOptions = ConfigRetrieverOptions()
       .addStore(configStoreOptions)
@@ -98,11 +101,11 @@ class MainVerticle : CoroutineVerticle() {
     vertx.orCreateContext.config().clear()
     applicationConfig?.stream()?.forEach{ vertx.orCreateContext.config().put(it.key, it.value)}
 
-    LOG.info("Printing startup application config:\n${vertx.orCreateContext.config().encodePrettily()}")
+    log.info("Printing startup application config:\n${vertx.orCreateContext.config().encodePrettily()}")
   }
 
   private suspend fun setupServices() {
-    LOG.info("Start setting up services")
+    log.info("Start setting up services")
 
     setupPostGreSqlClient()
     setupPostGreSQLBackedCountryRepository()
@@ -110,7 +113,7 @@ class MainVerticle : CoroutineVerticle() {
     setupGeoIpDataImporter()
     setupShellService()
 
-    LOG.info("Completed setting up services")
+    log.info("Completed setting up services")
   }
 
   private fun setupPostGreSqlClient() {
@@ -140,7 +143,7 @@ class MainVerticle : CoroutineVerticle() {
       .setKeyPairOptions(JksOptions().setPath(keyStoreLocation).setPassword("foobar"))
     )
 
-    LOG.info("Starting shell service at ${sshHost}:${sshPort}")
+    log.info("Starting shell service at ${sshHost}:${sshPort}")
     val shellService = ShellService.create(vertx, options)
     val resolver = CommandResolver.baseCommands(vertx)
     resolver.commands().add(importData)
@@ -175,12 +178,12 @@ class MainVerticle : CoroutineVerticle() {
   }
 
   private fun startEventListeners() {
-    LOG.info("Start setting up event listeners")
+    log.info("Start setting up event listeners")
 
     vertx.eventBus().consumer<JsonObject>(EventBusAddress.DOMAIN_EVENTS_LISTENER_ADDRESS
       .address) { eventBusMessage -> handleMessage(eventBusMessage) }
 
-    LOG.info("Completing setting up event listeners")
+    log.info("Completing setting up event listeners")
   }
 
   private suspend fun startVerticles() {
@@ -188,16 +191,16 @@ class MainVerticle : CoroutineVerticle() {
   }
 
   private suspend fun deployVerticle(className: String) {
-    LOG.info("Deploying verticle ${className}")
+    log.info("Deploying verticle ${className}")
     vertx.deployVerticleAwait(className, deploymentOptionsOf(applicationConfig))
-    LOG.info("Deployed verticle ${className}")
+    log.info("Deployed verticle ${className}")
   }
 
   private fun handleMessage(eventBusMessage: Message<JsonObject>?) {
     if (eventBusMessage != null) {
       val payload: JsonObject = eventBusMessage.body()
       val type = payload.getString("type")
-      LOG.info("Received event of type ${type}.")
+      log.info("Received event of type ${type}.")
 
       launch(vertx.dispatcher()) {
 
@@ -239,15 +242,24 @@ class MainVerticle : CoroutineVerticle() {
           val geoIpRange = GeoIpRange.from(event.cidrRange, region, country, city)
           geoIpRangeRepository.saveSingleAwait(geoIpRange)
         } else {
-          LOG.error("No country found with: countryIsoCode='${region.countryIsoCode}'")
+          log.error("No country found with: countryIsoCode='${region.countryIsoCode}'")
         }
       } else {
-        LOG.error("No region found with: regionIntIdentifier='${city.regionIntIdentifier}'")
+        log.error("No region found with: regionIntIdentifier='${city.regionIntIdentifier}'")
       }
     } else {
       // TODO: region without cities case
-      LOG.error("No city found with: geoIdentifier='${event.geoNameIdentifier}'")
+      log.error("No city found with: geoIdentifier='${event.geoNameIdentifier}'")
     }
+  }
+
+  private suspend fun setupPeriodicCacheClear() {
+    vertx.setPeriodic(EVERY_5_MINUTES, { timerId ->
+      launch (vertx.dispatcher()) {
+        geoIpRangeRepository.refillCacheAwait()
+        countryRepository.refillCacheAwait()
+      }
+    })
   }
 
   suspend fun CommandBuilderImpl.processHandlerAwait(fn: suspend (CommandProcess) -> Unit): CommandBuilderImpl {
@@ -256,7 +268,7 @@ class MainVerticle : CoroutineVerticle() {
         try {
           fn(commandProcess)
         } catch (e: Exception) {
-          LOG.error("Error while handling command: ", e)
+          log.error("Error while handling command: ", e)
         }
       }
     }

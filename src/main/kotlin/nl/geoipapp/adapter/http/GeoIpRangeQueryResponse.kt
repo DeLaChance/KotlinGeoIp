@@ -1,7 +1,6 @@
 package nl.geoipapp.adapter.http
 
 import io.vertx.core.json.JsonObject
-import nl.geoipapp.domain.Country
 import nl.geoipapp.domain.GeoIpRange
 
 class GeoIpRangeQueryResponse(
