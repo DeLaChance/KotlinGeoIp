@@ -21,6 +21,10 @@ suspend fun CountryRepository.findCountryByIdAwait(isoCode: String): Country? {
     return awaitResult { handler -> findCountryById(isoCode, handler) }
 }
 
+suspend fun CountryRepository.findRegionByIdAwait(id: Int): Region? {
+    return awaitResult { handler -> findRegionById(id, handler) }
+}
+
 suspend fun CountryRepository.findRegionByGeoIdentifierAwait(geoNameIdentifier: String): Region? {
     return awaitResult { handler -> findRegionByGeoIdentifier(geoNameIdentifier, handler) }
 }
@@ -39,6 +43,10 @@ suspend fun CountryRepository.addCityToRegionAwait(region: Region, city: City): 
 
 suspend fun CountryRepository.clearAwait(): Void {
     return awaitResult { handler -> clear(handler) }
+}
+
+suspend fun CountryRepository.refillCacheAwait(): Void {
+    return awaitResult { handler -> refillCache(handler) }
 }
 
 suspend fun CountryRepository.findCityByGeoIdentifierAwait(geoNameIdentifier: String): City? {

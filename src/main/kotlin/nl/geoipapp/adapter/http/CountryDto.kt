@@ -21,7 +21,7 @@ class CountryDto(
         if (regions != null) {
             jsonObject.put("regions", JsonArray().addAll(regions.map{ it.toJson() }))
         } else if (selectedRegion != null) {
-            jsonObject.put("selectedRegion", selectedRegion)
+            jsonObject.put("selectedRegion", selectedRegion.toJson())
         }
 
         return jsonObject

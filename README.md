@@ -24,6 +24,50 @@ and then run: `% importData countries` or `importData geoipranges`.
 # API's
 One can see the data at:
 
+## Query all countries
 [http://localhost:8081/api/countries/](http://localhost:8081/api/countries/)
-[http://localhost:8081/api/countries/NL](http://localhost:8081/api/countries/NL)
-[http://localhost:8081/api/geoipranges/query/217.105.36.0]([http://localhost:8081/api/geoipranges/query/217.105.36.0)
+
+## Query country by ISO2 code
+URL: [http://localhost:8081/api/countries/NL](http://localhost:8081/api/countries/NL) 
+
+Snippet of response:
+```
+{
+  "isoCode2" : "NL",
+  "name" : "Netherlands",
+  "regions" : [ {
+      "subdivision1Code" : "FR",
+      "subdivision1Name" : "Friesland",
+      "cities" : [ "Abbega", ... ]
+    },
+    {
+        "subdivision1Code" : "GE",
+        "subdivision1Name" : "Gelderland",
+        "cities" : [ "Aalst", "Aalten", ... ]
+    },
+    ...
+  ]
+}
+```
+
+## Query by IP V4 address
+URL: [http://localhost:8081/api/geoipranges/query/5.132.82.81](http://localhost:8081/api/geoipranges/query/5.132.82.81)
+
+yields (example)
+
+```
+{
+  "query" : {
+    "ipAddress" : "5.132.82.81"
+  },
+  "country" : {
+    "isoCode2" : "NL",
+    "name" : "Netherlands",
+    "selectedRegion" : {
+      "subdivision1Code" : "NB",
+      "subdivision1Name" : "North Brabant",
+      "selectedCity" : "Eindhoven"
+    }
+  }
+}
+```

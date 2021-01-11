@@ -95,7 +95,10 @@ class MainVerticle : CoroutineVerticle() {
     val retriever = ConfigRetriever.create(vertx, configRetrieverOptions)
     applicationConfig = retriever.getConfigAwait()
 
-    LOG.info("Printing startup application config:\n${applicationConfig?.encodePrettily()}")
+    vertx.orCreateContext.config().clear()
+    applicationConfig?.stream()?.forEach{ vertx.orCreateContext.config().put(it.key, it.value)}
+
+    LOG.info("Printing startup application config:\n${vertx.orCreateContext.config().encodePrettily()}")
   }
 
   private suspend fun setupServices() {
@@ -168,7 +171,7 @@ class MainVerticle : CoroutineVerticle() {
       .register(CountryRepository::class.java, delegate)
     countryRepository = createPostGreSQLBackedRepositoryProxy(vertx)
 
-    countryRepository.findAllCountriesAwait() // Fills up the cache
+    countryRepository.refillCacheAwait() // Fills up the cache
   }
 
   private fun startEventListeners() {
@@ -229,16 +232,21 @@ class MainVerticle : CoroutineVerticle() {
     val event = GeoIpRangeCreatedEvent(payload)
     val city: City? = countryRepository.findCityByGeoIdentifierAwait(event.geoNameIdentifier)
     if (city != null && city.regionIntIdentifier != null) {
-      val region: Region? = countryRepository.findRegionByGeoIdentifierAwait(city.geoNameIdentifier)
+      val region: Region? = countryRepository.findRegionByIdAwait(city.regionIntIdentifier)
       if (region != null) {
         val country: Country? = countryRepository.findCountryByIdAwait(region.countryIsoCode)
         if (country != null) {
           val geoIpRange = GeoIpRange.from(event.cidrRange, region, country, city)
           geoIpRangeRepository.saveSingleAwait(geoIpRange)
+        } else {
+          LOG.error("No country found with: countryIsoCode='${region.countryIsoCode}'")
         }
+      } else {
+        LOG.error("No region found with: regionIntIdentifier='${city.regionIntIdentifier}'")
       }
     } else {
-      // TODO: handle case of regions without cities
+      // TODO: region without cities case
+      LOG.error("No city found with: geoIdentifier='${event.geoNameIdentifier}'")
     }
   }
 

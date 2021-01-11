@@ -12,7 +12,7 @@ import io.vertx.core.json.JsonObject
  */
 fun JsonObject.getNestedString(key: String, defaultValue: String): String {
     var subKeys = key.split(".")
-    val jsonObject: JsonObject? = nestedSearch(subKeys)
+    val jsonObject: JsonObject? = nestedSearch(subKeys, this)
 
     val returnValue = jsonObject?.getString(subKeys[subKeys.size - 1])
     if (returnValue == null) {
@@ -24,7 +24,7 @@ fun JsonObject.getNestedString(key: String, defaultValue: String): String {
 
 fun JsonObject.getNestedInteger(key: String, defaultValue: Int): Int {
     var subKeys = key.split(".")
-    val jsonObject: JsonObject? = nestedSearch(subKeys)
+    val jsonObject: JsonObject? = nestedSearch(subKeys, this)
 
     val returnValue = jsonObject?.getInteger(subKeys[subKeys.size - 1])
     if (returnValue == null) {
@@ -35,10 +35,10 @@ fun JsonObject.getNestedInteger(key: String, defaultValue: Int): Int {
 
 }
 
-fun JsonObject.nestedSearch(subKeys: List<String>): JsonObject? {
-    var jsonObject: JsonObject? = null
+private fun nestedSearch(subKeys: List<String>, initialJsonObject: JsonObject): JsonObject? {
+    var jsonObject: JsonObject? = initialJsonObject
     for (i in 0 until subKeys.size-1) {
-        jsonObject = getJsonObject(subKeys[i])
+        jsonObject = jsonObject?.getJsonObject(subKeys[i])
 
         if (jsonObject == null) {
             break

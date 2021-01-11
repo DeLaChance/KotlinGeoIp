@@ -1,7 +1,7 @@
 {
   "geoData": {
-    "countriesAndRegions": "input/countriesandregions.benelux.csv",
-    "geoIpRanges": "input/geoipranges.eindhoven.csv"
+    "countriesandregions": "input/countriesandregions.benelux.csv",
+    "geoipranges": "input/geoipranges.eindhoven.csv"
   },
   "http": {
     "port": 8081

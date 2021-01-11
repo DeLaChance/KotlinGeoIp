@@ -9,6 +9,7 @@ import nl.geoipapp.repository.country.CountryRepository
 import nl.geoipapp.repository.geoiprange.GeoIpRangeRepository
 import nl.geoipapp.repository.geoiprange.CachedGeoIpRangeRepository
 import spock.lang.Specification
+import spock.lang.Unroll
 
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
@@ -32,6 +33,7 @@ class CachedGeoIpRangeRepositoryTest extends Specification {
         instanceToBeTested.geoIpRangesCache.add(geoIpRange)
     }
 
+    @Unroll
     def "Test that #ipAddress can be found"() {
         given:
             String ipAddress = IP_ADDRESS_LOW_END

@@ -14,5 +14,6 @@ class GeoIpRangeCreatedEvent(val geoNameIdentifier: String, val cidrRange: Strin
     )
 
     fun toJson(): JsonObject = JsonObject().put("cidrRange", cidrRange).put("geoNameIdentifier", geoNameIdentifier)
+        .put("type", type)
 
 }

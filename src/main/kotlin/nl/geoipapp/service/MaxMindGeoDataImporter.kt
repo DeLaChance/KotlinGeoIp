@@ -67,14 +67,14 @@ class MaxMindGeoDataImporter(val vertx: Vertx) : GeoDataImporter, CoroutineScope
     }
 
     private fun geoIpRangesFileLocation(): String {
-        val fileName = vertx.orCreateContext.config().getNestedString("geoData.geoIpRanges",
+        val fileName = vertx.orCreateContext.config().getNestedString("geodata.geoipranges",
             "input/geoipranges.csv")
         log.info("Geo ip ranges file name is: ${fileName}")
         return fileName
     }
 
     private fun countriesFileLocation(): String {
-        val fileName = vertx.orCreateContext.config().getNestedString("geoData.countriesandregions",
+        val fileName = vertx.orCreateContext.config().getNestedString("geodata.countriesandregions",
             "input/countriesandregions.csv")
         log.info("Countries and regions file name is: ${fileName}")
         return fileName
@@ -290,7 +290,7 @@ class MaxMindGeoDataImporter(val vertx: Vertx) : GeoDataImporter, CoroutineScope
     }
 
     private suspend fun throwGeoIpRangeCreatedEvent(ipRange: String, geoIdentifier: String) {
-        val eventPayload = GeoIpRangeCreatedEvent(ipRange, geoIdentifier).toJson()
+        val eventPayload = GeoIpRangeCreatedEvent(geoNameIdentifier = geoIdentifier, cidrRange = ipRange).toJson()
         sendPayloadToEventBus(eventPayload)
     }
 

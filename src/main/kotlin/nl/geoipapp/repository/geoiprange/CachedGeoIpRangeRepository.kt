@@ -22,11 +22,11 @@ class CachedGeoIpRangeRepository(val postgreSQLClient: PostgreSQLClient, val cou
     private val MAX_SIZE_CACHE = 2_000
 
     private val queryGeoIpRangesSql = "select gr.\"beginIpNumeric\",gr.\"endIpNumeric\",gr.\"beginIp\",gr.\"endIp\"," +
-        "gr.\"country\",r.\"geoIdentifier\" as \"region\",c.\"geoIdentifier\" as \"city\",\"gr.priority\",gr.\"id\"\n" +
+        "gr.\"country\",r.\"geoIdentifier\" as \"region\",c.\"geoIdentifier\" as \"city\",gr.\"priority\",gr.\"id\"\n" +
         "from kotlingeoipapp.kotlingeoipapp.geoiprange gr\n" +
         "inner join kotlingeoipapp.kotlingeoipapp.region r on r.\"id\" = gr.\"region\"\n" +
         "inner join kotlingeoipapp.kotlingeoipapp.city c on c.\"id\" = gr.\"city\"\n" +
-        "where gr.\"beginIpNumeric\" >= $1 and gr.\"endIpNumeric\" <= $1\n" +
+        "where gr.\"beginIpNumeric\" <= $1 and gr.\"endIpNumeric\" >= $1\n" +
         "order by gr.\"priority\""
 
     private val upsertGeoIpRangeSql = "insert into kotlingeoipapp.kotlingeoipapp.geoiprange " +
@@ -75,8 +75,8 @@ class CachedGeoIpRangeRepository(val postgreSQLClient: PostgreSQLClient, val cou
         launch {
 
             postgreSQLClient.updateAwait(upsertGeoIpRangeSql, listOf(geoIpRange.beginIpNumeric,
-                geoIpRange.endIpNumeric, geoIpRange.beginIp, geoIpRange.endIp, geoIpRange.country, geoIpRange.region,
-                geoIpRange.city, geoIpRange.priority))
+                geoIpRange.endIpNumeric, geoIpRange.beginIp, geoIpRange.endIp, geoIpRange.country?.isoCode2,
+                geoIpRange.region?.intIdentifier, geoIpRange.city?.intIdentifier, geoIpRange.priority))
             handler.handle(Future.succeededFuture())
         }
     }
