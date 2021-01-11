@@ -4,8 +4,14 @@ and answer queries mapping IP address (V4) to a country, region and/or city.
 
 # Technologies
 - Kotlin 
-- Vertx 
+- Vertx
+- Liquibase
+- Postgres 
 - Maven
+
+# Setup
+You need to have Java 8+ and Maven installed. Furthermore you need to have a PostGres DB running at `localhost:5432`.
+If you have it running on a different host and/or port, change the configuration in `conf/config.json`.
 
 # Build
 Build with `mvn clean install`
@@ -20,6 +26,8 @@ One can trigger the import via a SSH shell running:
 with password `vertx`
 
 and then run: `% importData countries` or `importData geoipranges`.
+
+Warning: this will delete any existing data.
 
 # API's
 One can see the data at:
