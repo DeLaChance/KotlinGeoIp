@@ -4,3 +4,4 @@ input/countriesandregions.csv
 input/geoipranges.csv
 conf/*
 *.log
+src/main/resources/liquibase/liquibase.aws.properties
