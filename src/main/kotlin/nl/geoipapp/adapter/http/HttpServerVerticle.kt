@@ -44,6 +44,7 @@ class HttpServerVerticle : CoroutineVerticle() {
         countryRepository = createPostGreSQLBackedRepositoryProxy(vertx)
         geoIpRangeRepository = createProxy(vertx)
 
+        router.get("/").handler{ctx -> ctx.reroute("/static/")}
         router.get("/static/*").handler(StaticHandler.create("webapp"))
         router.get("/api/*").handler(CorsHandler.create("*").allowedMethod(HttpMethod.GET))
         router.get("/api/countries/:isoCode").coroutineHandler(findCountryByIsoCode())
