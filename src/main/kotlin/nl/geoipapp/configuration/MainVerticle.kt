@@ -130,7 +130,7 @@ class MainVerticle : CoroutineVerticle() {
     registry.registerCommandAwait(importData)
 
     val globalConfig = vertx.orCreateContext.config()
-    val sshPort = globalConfig.getNestedInteger("ssh.port", 5000)
+    val sshPort = globalConfig.getNestedInteger("ssh.port", 5001)
     val sshHost = globalConfig.getNestedString("ssh.host", "localhost")
     val keyStoreLocation = globalConfig.getNestedString("ssh.keystoreLocation","conf/keystore.jks")
 

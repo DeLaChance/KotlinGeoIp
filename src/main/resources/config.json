@@ -4,6 +4,9 @@
     "geoipranges": "input/geoipranges.eindhoven.csv"
   },
   "http": {
-    "port": 8081
+    "port": 5000
+  },
+  "ssh": {
+    "port": 5001
   }
 }

@@ -21,7 +21,7 @@ Run with `java -jar target/kotlin-geo-ip-1.0-SNAPSHOT-jar-with-dependencies.jar`
 
 One can trigger the import via a SSH shell running:
 
-`$ ssh vertx@localhost -p 5000`
+`$ ssh vertx@localhost -p 5001`
 
 with password `vertx`
 
@@ -33,10 +33,10 @@ Warning: this will delete any existing data.
 One can see the data at:
 
 ## Query all countries
-[http://localhost:8081/api/countries/](http://localhost:8081/api/countries/)
+[http://localhost:5000/api/countries/](http://localhost:5000/api/countries/)
 
 ## Query country by ISO2 code
-URL: [http://localhost:8081/api/countries/NL](http://localhost:8081/api/countries/NL) 
+URL: [http://localhost:5000/api/countries/NL](http://localhost:5000/api/countries/NL) 
 
 Snippet of response:
 ```
@@ -59,7 +59,7 @@ Snippet of response:
 ```
 
 ## Query by IP V4 address
-URL: [http://localhost:8081/api/geoipranges/query/5.132.82.81](http://localhost:8081/api/geoipranges/query/5.132.82.81)
+URL: [http://localhost:5000/api/geoipranges/query/5.132.82.81](http://localhost:5000/api/geoipranges/query/5.132.82.81)
 
 yields (example)
 

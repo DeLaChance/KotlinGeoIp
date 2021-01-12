@@ -51,8 +51,8 @@ class HttpServerVerticle : CoroutineVerticle() {
         router.get("/api/countries").coroutineHandler(findAllCountries())
         router.get("/api/geoipranges/query/:ipAddress").coroutineHandler(findGeoIpRangeByIpAddress())
 
-        var port: Int = vertx.orCreateContext.config().getNestedInteger("http.port", 8080)
-        var host: String = vertx.orCreateContext.config().getNestedString("http.server", "localhost")
+        var port: Int = vertx.orCreateContext.config().getNestedInteger("http.port", 5000)
+        var host: String = vertx.orCreateContext.config().getNestedString("http.server", "127.0.0.1")
 
         LOG.info("Starting server at ${host}:${port}")
         server.requestHandler(router).listenAwait(port, host)
