@@ -17,11 +17,11 @@ class PostgreSQLClient(val vertx: Vertx) {
     private val globalConfig: JsonObject = vertx.orCreateContext.config()
 
     private val connectOptions: PgConnectOptions = PgConnectOptions()
-        .setPort(globalConfig.getNestedInteger("db.postgres.port", 5432))
-        .setHost(globalConfig.getNestedString("db.postgres.host", "localhost"))
-        .setDatabase("kotlingeoipapp")
-        .setUser("postgres")
-        .setPassword("postgres")
+        .setPort(globalConfig.getNestedInteger("db.port", 5432))
+        .setHost(globalConfig.getNestedString("db.host", "localhost"))
+        .setDatabase(globalConfig.getNestedString("db.name","kotlingeoipapp"))
+        .setUser(globalConfig.getNestedString("db.user","postgres"))
+        .setPassword(globalConfig.getNestedString("db.password","postgres"))
 
     private val poolOptions: PoolOptions = PoolOptions()
         .setMaxSize(5)

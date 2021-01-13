@@ -15,8 +15,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
-
         <vertx.version>3.9.4</vertx.version>
+        <aws.postgres.liquibaseSkip>true</aws.postgres.liquibaseSkip>
     </properties>
 
     <dependencies>
@@ -376,6 +376,19 @@
                             <goal>update</goal>
                         </goals>
                     </execution>
+                    <execution>
+                        <id>liquibase-AWS</id>
+                        <phase>deploy</phase>
+                        <goals>
+                            <goal>update</goal>
+                        </goals>
+                        <configuration>
+                            <propertyFile>src/main/resources/liquibase/liquibase.aws.properties</propertyFile>
+                            <changeLogFile>src/main/resources/liquibase/db.changelog.xml</changeLogFile>
+                            <skip>${aws.postgres.liquibaseSkip}</skip>
+                        </configuration>
+                    </execution>
+
                 </executions>
             </plugin>
 

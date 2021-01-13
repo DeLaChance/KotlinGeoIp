@@ -117,6 +117,9 @@ class MainVerticle : CoroutineVerticle() {
   }
 
   private fun setupPostGreSqlClient() {
+    val dbHost = applicationConfig?.getNestedString("db.host", "localhost")
+    log.info("${dbHost}")
+
     postGreSqlClient = PostgreSQLClient(vertx)
   }
 
