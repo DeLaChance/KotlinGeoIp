@@ -13,6 +13,34 @@ and answer queries mapping IP address (V4) to a country, region and/or city.
 You need to have Java 8+ and Maven installed. Furthermore you need to have a PostGres DB running at `localhost:5432`.
 If you have it running on a different host and/or port, change the configuration in `conf/config.json`.
 
+Also, you need to create a dummy keystore at `conf/keystore.jks` to satisfy the Vertx SSH server.
+
+Example of `conf/config.json`:
+
+```
+{
+  "geoData": {
+    "countriesandregions": "input/countriesandregions.benelux.csv",
+    "geoipranges": "input/geoipranges.eindhoven.csv"
+  },
+  "http": {
+    "port": 5000
+  },
+  "ssh": {
+    "port": 5001
+  },
+
+  "db" : {
+    "port" : 5432,
+      "host" : "<appname>.copsisody40i.eu-central-1.rds.amazonaws.com",
+      "name" : "kotlingeoipapp",
+      "user" : "postgres",
+      "password" : "postgres"
+  }
+
+}
+```
+
 # Build
 Build with `mvn clean install`
 
