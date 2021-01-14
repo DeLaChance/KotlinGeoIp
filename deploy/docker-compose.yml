@@ -1,0 +1,18 @@
+version: '3'
+services:
+  db:
+    image: kotlingeoipapp-db:latest
+    restart: always
+    ports:
+        - 5432:5432
+    volumes:
+      - "./data:/var/lib/postgresql/data"
+
+  backend:
+    image: kotlingeoipapp-backend:latest
+    restart: always
+    depends_on: 
+      - db    
+    ports:
+      - 5000:5000
+      - 5001:5001
